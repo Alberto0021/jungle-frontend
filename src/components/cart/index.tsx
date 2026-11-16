@@ -1,28 +1,15 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { setCartItems, useCartItems } from '../../lib/cartStore'
 import { nfts } from '../nftCatalog/nfts'
 
-type CartItem = {
-    id: string
-    quantity: number
-}
-
-const initialItems: CartItem[] = [
-    { id: '042', quantity: 2 },
-    { id: '314', quantity: 6 },
-    { id: '088', quantity: 9 },
-]
-
 const recommendationIds = ['118', '314', '088', '601', '603']
-
 const recommendations = recommendationIds.flatMap((id) => {
     const nft = nfts.find((item) => item.id === id)
-
-    if (!nft) return []
-
-    return [nft]
+    return nft ? [nft] : []
 })
 
+const columnClass = 'border-b border-border pb-2 font-medium'
 const quantityButtonClass =
     'grid h-7 w-5 place-items-center rounded-full bg-primary text-base text-primary-foreground enabled:cursor-pointer disabled:opacity-60'
 
@@ -48,50 +35,44 @@ function TrashIcon() {
 }
 
 export default function Cart() {
-    const [items, setItems] = useState(initialItems)
+    const items = useCartItems()
     const [promoCode, setPromoCode] = useState('')
     const [promoMessage, setPromoMessage] = useState('')
 
     const rows = items.flatMap(({ id, quantity }) => {
         const nft = nfts.find((item) => item.id === id)
-
         if (!nft) return []
 
         const unitPrice = Math.round(nft.price * 1000)
-
         return [{ nft, quantity, unitPrice, lineTotal: unitPrice * quantity }]
     })
 
     const subtotal = rows.reduce((sum, row) => sum + row.lineTotal, 0)
     let networkFee = 0
-
     if (rows.length > 0) networkFee = 16
 
     function changeQuantity(id: string, delta: number) {
-        setItems((current) =>
+        setCartItems((current) =>
             current.map((item) => {
                 if (item.id !== id) return item
-
                 return { ...item, quantity: Math.max(1, item.quantity + delta) }
             }),
         )
     }
 
     function removeItem(id: string) {
-        setItems((current) => current.filter((item) => item.id !== id))
+        setCartItems((current) => current.filter((item) => item.id !== id))
     }
 
     return (
         <main
-            className="mx-auto w-[calc(100%_-_2rem)] max-w-[1200px] pt-7 pb-16"
+            className="mx-auto w-[calc(100%_-_2rem)] max-w-[1200px] pt-7"
             style={{ fontFamily: '"Roboto Mono", monospace' }}
         >
             <nav aria-label="Localização" className="mb-2 flex flex-wrap gap-2 text-xs">
                 <Link to="/" className="hover:text-primary">Início</Link>
                 <span aria-hidden="true">/</span>
-                <Link to="/" hash="catalogo" className="hover:text-primary">
-                    Mercado
-                </Link>
+                <Link to="/" hash="catalogo" className="hover:text-primary">Mercado</Link>
                 <span aria-hidden="true">/</span>
                 <span aria-current="page">Carrinho</span>
             </nav>
@@ -111,11 +92,11 @@ export default function Cart() {
                             <table className="w-full min-w-[570px] border-separate border-spacing-y-2 text-sm">
                                 <thead className="text-left text-xs">
                                     <tr>
-                                        <th scope="col" className="border-b border-border pb-2 font-medium">NFTs</th>
-                                        <th scope="col" className="border-b border-border pb-2 font-medium">Preço</th>
-                                        <th scope="col" className="border-b border-border pb-2 font-medium">Edições</th>
-                                        <th scope="col" className="border-b border-border pb-2 font-medium">Total</th>
-                                        <th scope="col" className="border-b border-border pb-2">
+                                        <th scope="col" className={columnClass}>NFTs</th>
+                                        <th scope="col" className={columnClass}>Preço</th>
+                                        <th scope="col" className={columnClass}>Edições</th>
+                                        <th scope="col" className={columnClass}>Total</th>
+                                        <th scope="col" className={columnClass}>
                                             <span className="sr-only">Remover</span>
                                         </th>
                                     </tr>
@@ -133,7 +114,7 @@ export default function Cart() {
                                                         <img
                                                             src={nft.image}
                                                             alt=""
-                                                            className="size-[70px] shrink-0 rounded-md object-cover"
+                                                            className="size-[72px] shrink-0 rounded-md object-cover"
                                                         />
                                                     )}
                                                     <span>
@@ -250,7 +231,10 @@ export default function Cart() {
                         </div>
                         <div className="flex justify-between gap-2">
                             <dt>Taxa de rede</dt>
-                            <dd className="whitespace-nowrap">{formatEth(networkFee, 3)}</dd>
+                            <dd className="whitespace-nowrap text-right">
+                                {formatEth(networkFee, 3)}
+                                <span className="mt-2 block text-[10px] text-primary">Taxa estimada</span>
+                            </dd>
                         </div>
                         <div className="flex justify-between gap-2 pt-4 text-sm font-bold">
                             <dt>Total</dt>
@@ -260,26 +244,33 @@ export default function Cart() {
                         </div>
                     </dl>
 
-                    <button
-                        type="button"
-                        disabled
-                        title="Conexão de carteira ainda não integrada"
-                        className="mt-4 h-10 w-full rounded-sm bg-primary text-xs font-bold text-primary-foreground"
-                    >
-                        Conectar e finalizar
-                    </button>
+                    {rows.length > 0 && (
+                        <Link
+                            to="/pagamento"
+                            className="mt-4 flex h-10 w-full items-center justify-center rounded-sm bg-primary text-xs font-bold text-primary-foreground"
+                        >
+                            Conectar e finalizar
+                        </Link>
+                    )}
 
-                    <Link to="/" hash="catalogo" className="mt-3 block text-center text-xs text-primary hover:underline">
+                    <Link
+                        to="/"
+                        hash="catalogo"
+                        className="mt-3 block text-center text-xs text-primary hover:underline"
+                    >
                         Continuar explorando
                     </Link>
                 </aside>
             </div>
 
             <section aria-labelledby="cart-recommendations-title" className="mt-16 lg:mt-24">
-                <h2 id="cart-recommendations-title" className="border-b border-border pb-2 text-sm font-bold text-primary">
+                <h2
+                    id="cart-recommendations-title"
+                    className="border-b border-border pb-2 text-sm font-bold text-primary"
+                >
                     Colecionadores também viram
                 </h2>
-                <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 lg:gap-7">
                     {recommendations.map((nft) => (
                         <li key={nft.id}>
                             <Link
@@ -288,7 +279,7 @@ export default function Cart() {
                                 className="block hover:text-primary"
                             >
                                 {nft.image && (
-                                    <div className="rounded-md bg-[#251710] p-2.5">
+                                    <div className="bg-[#251710] px-2 pt-3 pb-5">
                                         <img
                                             src={nft.image}
                                             alt=""
@@ -305,6 +296,11 @@ export default function Cart() {
                         </li>
                     ))}
                 </ul>
+                <div aria-hidden="true" className="mt-6 flex justify-center gap-2">
+                    <span className="size-2.5 rounded-full border border-primary" />
+                    <span className="size-2.5 rounded-full bg-primary" />
+                    <span className="size-2.5 rounded-full border border-primary" />
+                </div>
             </section>
         </main>
     )

@@ -1,13 +1,10 @@
-import {
-    createRootRoute,
-    createRoute,
-    createRouter,
-    Outlet,
-} from '@tanstack/react-router'
+import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router'
 
-import Cart from './components/cart'
 import Home from './pages/app/home'
 import NftDetails from './pages/app/nftDetails'
+import CartPage from './pages/cart'
+import CheckoutPage from './pages/checkout'
+import OrderConfirmationPage from './pages/orderConfirmation'
 
 const rootRoute = createRootRoute({ component: Outlet })
 
@@ -26,11 +23,29 @@ const nftDetailsRoute = createRoute({
 const cartRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/carrinho',
-    component: Cart,
+    component: CartPage,
+})
+
+const checkoutRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/pagamento',
+    component: CheckoutPage,
+})
+
+const orderConfirmationRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/confirmacao',
+    component: OrderConfirmationPage,
 })
 
 export const router = createRouter({
-    routeTree: rootRoute.addChildren([homeRoute, nftDetailsRoute, cartRoute]),
+    routeTree: rootRoute.addChildren([
+        homeRoute,
+        nftDetailsRoute,
+        cartRoute,
+        checkoutRoute,
+        orderConfirmationRoute,
+    ]),
 })
 
 declare module '@tanstack/react-router' {
