@@ -1,9 +1,6 @@
-import Header from "./Header/Header";
+import { RouterProvider } from '@tanstack/react-router'
+import { router } from './router'
 
 export default function App() {
-  return (
-    <div className="min-h-screen bg-[#160e09]">
-      <Header />
-    </div>
-  )
+  return <RouterProvider router={router} />
 }

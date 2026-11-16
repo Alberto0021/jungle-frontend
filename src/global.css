@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+@theme {
+  --color-background: #160e09;
+  --color-foreground: #f4eee8;
+  --color-primary: #d99152;
+  --color-primary-foreground: #160e09;
+  --color-border: #3b271b;
+  --color-muted-foreground: #d4b38e;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}

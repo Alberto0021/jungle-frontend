@@ -1,13 +1,14 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router'
+import Home from './pages/app/home/Home'
 
 const rootRoute = createRootRoute({ component: Outlet })
 
-const catalogRoute = createRoute({
+const homeRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/',
-    component: () => <h1>Catálogo</h1>,
+    component: Home,
 })
 
 export const router = createRouter({
-    routeTree: rootRoute.addChildren([catalogRoute]),
+    routeTree: rootRoute.addChildren([homeRoute]),
 })
