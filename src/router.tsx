@@ -5,6 +5,7 @@ import NftDetails from './pages/app/nftDetails'
 import CartPage from './pages/cart'
 import CheckoutPage from './pages/checkout'
 import OrderConfirmationPage from './pages/orderConfirmation'
+import RegisterPage from './pages/register'
 
 const rootRoute = createRootRoute({ component: Outlet })
 
@@ -38,6 +39,12 @@ const orderConfirmationRoute = createRoute({
     component: OrderConfirmationPage,
 })
 
+const registerRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/cadastro',
+    component: RegisterPage,
+})
+
 export const router = createRouter({
     routeTree: rootRoute.addChildren([
         homeRoute,
@@ -45,6 +52,7 @@ export const router = createRouter({
         cartRoute,
         checkoutRoute,
         orderConfirmationRoute,
+        registerRoute,
     ]),
 })
 

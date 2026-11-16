@@ -1,5 +1,7 @@
+import { useRef } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { useCartItems } from '../../lib/cartStore'
+import AuthModal from '../authModal'
 
 function navClass(active: boolean) {
     const base = 'block border-b-2 py-4'
@@ -10,6 +12,7 @@ function navClass(active: boolean) {
 }
 
 export default function Header() {
+    const authDialogRef = useRef<HTMLDialogElement>(null)
     const { pathname } = useLocation()
     const items = useCartItems()
     const itemCount = items.reduce((total, item) => total + item.quantity, 0)
@@ -95,6 +98,8 @@ export default function Header() {
 
                 <button
                     type="button"
+                    aria-haspopup="dialog"
+                    onClick={() => authDialogRef.current?.showModal()}
                     className="inline-flex h-7 w-20 cursor-pointer items-center justify-center gap-1 rounded-[5px] bg-[#d99152] text-xs font-medium leading-none text-[#160e09]"
                 >
                     <svg
@@ -112,6 +117,8 @@ export default function Header() {
                     Entrar
                 </button>
             </div>
+
+            <AuthModal dialogRef={authDialogRef} />
         </header>
     )
 }
