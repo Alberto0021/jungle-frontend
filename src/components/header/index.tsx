@@ -3,7 +3,10 @@ import { Link, useLocation } from '@tanstack/react-router'
 export default function Header() {
     const { pathname } = useLocation()
     const isHome = pathname === '/'
-    const isMarket = pathname === '/mercado' || pathname.startsWith('/mercado/')
+    const isMarket =
+        pathname === '/mercado' ||
+        pathname.startsWith('/mercado/') ||
+        pathname === '/carrinho'
 
     function navClass(active: boolean) {
         const base = 'block border-b-2 py-4'
@@ -18,11 +21,7 @@ export default function Header() {
             <span className="font-bold tracking-widest">KURIO</span>
 
             <nav aria-label="Menu principal" className="flex items-center gap-8">
-                <Link
-                    to="/"
-                    activeOptions={{ exact: true }}
-                    className={navClass(isHome)}
-                >
+                <Link to="/" activeOptions={{ exact: true }} className={navClass(isHome)}>
                     Início
                 </Link>
 
@@ -34,13 +33,35 @@ export default function Header() {
                 >
                     Mercado
                 </Link>
+
                 <span>Criadores</span>
                 <span>Aprenda</span>
             </nav>
 
             <div className="flex items-center gap-5">
                 <span role="img" aria-label="Busca">⌕</span>
-                <span role="img" aria-label="Carrinho com 6 itens">🛒 6</span>
+
+                <Link
+                    to="/carrinho"
+                    aria-label="Abrir carrinho"
+                    className="inline-flex items-center hover:text-primary"
+                >
+                    <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="size-5"
+                    >
+                        <path d="M2 3h3l3 12h10l3-9H6" />
+                        <circle cx="9" cy="20" r="1" />
+                        <circle cx="18" cy="20" r="1" />
+                    </svg>
+                </Link>
+
                 <button type="button" className="rounded bg-[#d99152] px-3 py-1.5 text-[#160e09]">
                     Entrar
                 </button>

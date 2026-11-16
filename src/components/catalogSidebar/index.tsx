@@ -1,5 +1,5 @@
-import CatalogFilters from "../catalogFilters/CatalogFilters"
-import type { CatalogFilterValues } from "../nftCatalog/NftCatalog"
+import CatalogFilters from "../catalogFilters"
+import type { CatalogFilterValues } from "../nftCatalog"
 
 
 type CatalogSidebarProps = {

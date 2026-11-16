@@ -2,7 +2,7 @@ import emerald from '../../assets/macacoDeOculos.png'
 import sage from '../../assets/macacoDeChapeu.png'
 import neon from '../../assets/macacoDeGola.png'
 import headset from '../../assets/macacoDeHead.png'
-import type { Nft } from './NftCatalog'
+import type { Nft } from '.'
 
 export const nfts: Nft[] = [
     { id: '042', name: 'Emerald Ape', price: 1.19, image: emerald, collection: 'Arte digital', network: 'Ethereum', recent: true },

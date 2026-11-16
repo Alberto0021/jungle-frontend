@@ -5,8 +5,9 @@ import {
     Outlet,
 } from '@tanstack/react-router'
 
-import Home from './pages/app/home/Home'
-import NftDetails from './pages/app/nftDetails/NftDetails'
+import Cart from './components/cart'
+import Home from './pages/app/home'
+import NftDetails from './pages/app/nftDetails'
 
 const rootRoute = createRootRoute({ component: Outlet })
 
@@ -22,8 +23,14 @@ const nftDetailsRoute = createRoute({
     component: NftDetails,
 })
 
+const cartRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/carrinho',
+    component: Cart,
+})
+
 export const router = createRouter({
-    routeTree: rootRoute.addChildren([homeRoute, nftDetailsRoute]),
+    routeTree: rootRoute.addChildren([homeRoute, nftDetailsRoute, cartRoute]),
 })
 
 declare module '@tanstack/react-router' {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import type { Nft } from '../nftCatalog/NftCatalog'
+import type { Nft } from '../nftCatalog'
 
 const views = [
     { value: 'all', label: 'Todos os NFTs' },

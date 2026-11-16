@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import sage from '../../assets/macacoDeChapeu.png'
-import CatalogSidebar from '../catalogSidebar/CatalogSidebar'
-import NftGrid from '../nftGrid/NftGrid'
+import NftGrid from '../nftGrid'
 import { nfts } from './nfts'
+import CatalogSidebar from '../catalogSidebar'
 
 export type Nft = {
     id: string

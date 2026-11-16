@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
-import Header from '../../../components/header/Header'
-import Footer from '../../../components/footer/Footer'
+import Header from '../../../components/header'
+import Footer from '../../../components/footer'
 import { nfts } from '../../../components/nftCatalog/nfts'
-import type { Nft } from '../../../components/nftCatalog/NftCatalog'
+import type { Nft } from '../../../components/nftCatalog'
 
 type Panel = 'details' | 'reviews'
 

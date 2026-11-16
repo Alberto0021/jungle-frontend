@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CatalogFilterValues } from '../nftCatalog/NftCatalog'
+import type { CatalogFilterValues } from '../nftCatalog'
 
 
 const collections = [
