@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
+import { listNfts } from '../../api/nfts'
 import sage from '../../assets/macacoDeChapeu.png'
-import NftGrid from '../nftGrid'
-import { nfts } from './nfts'
 import CatalogSidebar from '../catalogSidebar'
+import NftGrid from '../nftGrid'
 
 export type Nft = {
     id: string
@@ -23,27 +24,79 @@ export type CatalogFilterValues = {
     maxPrice: number
 }
 
+const homeRouteApi = getRouteApi('/')
+const defaultMinPrice = 0.02
+const defaultMaxPrice = 12.3
+
 export default function NftCatalog() {
-    const [filters, setFilters] = useState<CatalogFilterValues>({
-        collection: '',
-        network: '',
-        minPrice: 0.02,
-        maxPrice: 12.3,
+    const search = homeRouteApi.useSearch()
+    const navigate = homeRouteApi.useNavigate()
+
+    const filters: CatalogFilterValues = {
+        collection: search.collection ?? '',
+        network: search.network ?? '',
+        minPrice: search.minPrice ?? defaultMinPrice,
+        maxPrice: search.maxPrice ?? defaultMaxPrice,
+    }
+
+    const nftQuery = useQuery({
+        queryKey: ['nfts', filters],
+        queryFn: ({ signal }) => listNfts(signal, filters),
     })
 
-    const filteredNfts = nfts.filter(
-        (nft) =>
-            (!filters.collection || nft.collection === filters.collection) &&
-            (!filters.network || nft.network === filters.network) &&
-            nft.price >= filters.minPrice &&
-            nft.price <= filters.maxPrice,
-    )
+    function setFilters(next: CatalogFilterValues) {
+        void navigate({
+            to: '/',
+            search: {
+                collection: next.collection || undefined,
+                network: next.network || undefined,
+                minPrice: next.minPrice === defaultMinPrice ? undefined : next.minPrice,
+                maxPrice: next.maxPrice === defaultMaxPrice ? undefined : next.maxPrice,
+            },
+            hash: 'catalogo',
+            replace: true,
+            resetScroll: false,
+        })
+    }
+
+    function renderGrid() {
+        if (nftQuery.isPending) {
+            return <p role="status">Carregando NFTs…</p>
+        }
+
+        if (nftQuery.isError && !nftQuery.data) {
+            return (
+                <div>
+                    <p role="alert">Não foi possível carregar os NFTs.</p>
+                    <button
+                        type="button"
+                        onClick={() => void nftQuery.refetch()}
+                        className="mt-3 cursor-pointer text-primary underline"
+                    >
+                        Tentar novamente
+                    </button>
+                </div>
+            )
+        }
+
+        const items: Nft[] = (nftQuery.data?.items ?? []).map(
+            ({ price, previousPrice, ...nft }) => ({
+                ...nft,
+                price: Number(price),
+                ...(previousPrice === undefined
+                    ? {}
+                    : { previousPrice: Number(previousPrice) }),
+            }),
+        )
+
+        return <NftGrid nfts={items} />
+    }
 
     return (
         <section
             id="catalogo"
             aria-label="Catálogo de NFTs"
-            className="mx-auto mt-12 grid w-[calc(100%-2rem)] max-w-[1200px] scroll-mt-6 items-start gap-8 lg:mt-24 lg:grid-cols-[minmax(220px,310px)_minmax(0,1fr)] lg:gap-12"
+            className="mx-auto mt-12 grid w-[calc(100%_-_2rem)] max-w-[1200px] scroll-mt-6 items-start gap-8 lg:mt-24 lg:grid-cols-[minmax(220px,310px)_minmax(0,1fr)] lg:gap-12"
             style={{ fontFamily: '"Roboto Mono", monospace' }}
         >
             <CatalogSidebar
@@ -52,7 +105,7 @@ export default function NftCatalog() {
                 featuredImage={sage}
             />
 
-            <NftGrid nfts={filteredNfts} />
+            {renderGrid()}
         </section>
     )
 }

@@ -1,5 +1,4 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router'
-
 import Home from './pages/app/home'
 import NftDetails from './pages/app/nftDetails'
 import CartPage from './pages/cart'
@@ -9,10 +8,27 @@ import RegisterPage from './pages/register'
 
 const rootRoute = createRootRoute({ component: Outlet })
 
+type HomeSearch = {
+    collection?: string
+    network?: string
+    minPrice?: number
+    maxPrice?: number
+}
+
 const homeRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/',
     component: Home,
+    validateSearch: (search: Record<string, unknown>): HomeSearch => ({
+        collection: typeof search.collection === 'string' ? search.collection : undefined,
+        network: typeof search.network === 'string' ? search.network : undefined,
+        minPrice: typeof search.minPrice === 'number' && Number.isFinite(search.minPrice)
+            ? search.minPrice
+            : undefined,
+        maxPrice: typeof search.maxPrice === 'number' && Number.isFinite(search.maxPrice)
+            ? search.maxPrice
+            : undefined,
+    }),
 })
 
 const nftDetailsRoute = createRoute({

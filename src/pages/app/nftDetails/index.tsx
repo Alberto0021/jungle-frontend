@@ -1,9 +1,14 @@
 import { useState } from 'react'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useParams, useNavigate, } from '@tanstack/react-router'
 import Header from '../../../components/header'
 import Footer from '../../../components/footer'
 import { nfts } from '../../../components/nftCatalog/nfts'
 import type { Nft } from '../../../components/nftCatalog'
+import { useQuery } from '@tanstack/react-query'
+import { getNftById } from '../../../api/nfts'
+import { isAxiosError } from 'axios'
+import { addToCart } from '../../../lib/cartStore'
+
 
 type Panel = 'details' | 'reviews'
 
@@ -231,6 +236,7 @@ function RelatedNfts({ nft }: { nft: Nft }) {
 }
 
 function NftProduct({ nft }: { nft: Nft }) {
+    const navigate = useNavigate()
     const [favorite, setFavorite] = useState(false)
     const [panel, setPanel] = useState<Panel>('details')
     const [edition, setEdition] = useState<Edition>('1/50')
@@ -366,9 +372,11 @@ function NftProduct({ nft }: { nft: Nft }) {
                         <div className="flex flex-wrap gap-2">
                             <button
                                 type="button"
-                                disabled
-                                title="Compra ainda não integrada"
-                                className="h-10 w-[130px] rounded-md bg-primary text-sm font-bold text-primary-foreground"
+                                onClick={() => {
+                                    addToCart(nft.id, quantity)
+                                    void navigate({ to: '/carrinho' })
+                                }}
+                                className="h-10 w-[130px] cursor-pointer rounded-md bg-primary text-sm font-bold text-primary-foreground"
                             >
                                 COMPRAR
                             </button>
@@ -428,18 +436,58 @@ function NftProduct({ nft }: { nft: Nft }) {
 
 export default function NftDetails() {
     const { nftId } = useParams({ from: '/mercado/$nftId' })
-    const nft = nfts.find((item) => item.id === nftId)
+
+    const nftQuery = useQuery({
+        queryKey: ['nfts', 'detail', nftId],
+        queryFn: ({ signal }) => getNftById(nftId, signal),
+        retry: false,
+    })
 
     function renderContent() {
-        if (!nft) {
+        if (nftQuery.isPending) {
+            return <p role="status">Carregando NFT…</p>
+        }
+
+        if (nftQuery.isError) {
+            const error = nftQuery.error
+            const notFound = isAxiosError(error) && error.response?.status === 404
+
             return (
                 <>
-                    <h1 className="text-2xl font-bold">NFT não encontrado</h1>
-                    <Link to="/" hash="catalogo" className="mt-4 inline-block text-primary">
+                    <h1 role="alert" className="text-2xl font-bold">
+                        {notFound
+                            ? 'NFT não encontrado'
+                            : 'Não foi possível carregar o NFT'}
+                    </h1>
+
+                    {!notFound && (
+                        <button
+                            type="button"
+                            onClick={() => void nftQuery.refetch()}
+                            className="mt-4 mr-4 cursor-pointer text-primary underline"
+                        >
+                            Tentar novamente
+                        </button>
+                    )}
+
+                    <Link
+                        to="/"
+                        hash="catalogo"
+                        className="mt-4 inline-block text-primary"
+                    >
                         Voltar ao catálogo
                     </Link>
                 </>
             )
+        }
+
+        const { price, previousPrice, ...item } = nftQuery.data
+        const nft: Nft = {
+            ...item,
+            price: Number(price),
+            ...(previousPrice === undefined
+                ? {}
+                : { previousPrice: Number(previousPrice) }),
         }
 
         return <NftProduct key={nft.id} nft={nft} />
@@ -454,7 +502,9 @@ export default function NftDetails() {
                 style={{ fontFamily: '"Roboto Mono", monospace' }}
             >
                 <nav aria-label="Localização" className="mb-3 flex gap-2 text-sm font-bold">
-                    <Link to="/" className="hover:text-primary">Início</Link>
+                    <Link to="/" className="hover:text-primary">
+                        Início
+                    </Link>
                     <span aria-hidden="true">/</span>
                     <Link to="/" hash="catalogo" className="hover:text-primary">
                         Mercado

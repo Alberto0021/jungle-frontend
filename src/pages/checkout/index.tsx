@@ -1,19 +1,11 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import Header from '../../components/header'
 import CheckoutForm from '../../components/checkoutForm'
 import CheckoutSummary from '../../components/checkoutSummary'
 import Footer from '../../components/footer'
 
-
 export default function CheckoutPage() {
-    const [message, setMessage] = useState('')
-
-    function handleSubmit(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault()
-        setMessage('Formulário validado. A conexão com a carteira ainda não foi integrada.')
-    }
+    const navigate = useNavigate()
 
     return (
         <>
@@ -24,9 +16,13 @@ export default function CheckoutPage() {
                 style={{ fontFamily: '"Roboto Mono", monospace' }}
             >
                 <nav aria-label="Localização" className="mb-5 flex flex-wrap gap-2 text-xs">
-                    <Link to="/" className="hover:text-primary">Início</Link>
+                    <Link to="/" className="hover:text-primary">
+                        Início
+                    </Link>
                     <span aria-hidden="true">/</span>
-                    <Link to="/" hash="catalogo" className="hover:text-primary">Mercado</Link>
+                    <Link to="/" hash="catalogo" className="hover:text-primary">
+                        Mercado
+                    </Link>
                     <span aria-hidden="true">/</span>
                     <span aria-current="page">Pagamento</span>
                 </nav>
@@ -35,14 +31,15 @@ export default function CheckoutPage() {
 
                 <form
                     noValidate
-                    onSubmit={handleSubmit}
+                    onSubmit={(event) => {
+                        event.preventDefault()
+                        void navigate({ to: '/confirmacao' })
+                    }}
                     className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]"
                 >
                     <CheckoutForm />
                     <CheckoutSummary />
                 </form>
-
-                {message && <p role="status" className="mt-4 text-sm text-primary">{message}</p>}
             </main>
 
             <Footer />

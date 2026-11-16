@@ -5,11 +5,7 @@ type CartItem = {
     quantity: number
 }
 
-let items: CartItem[] = [
-    { id: '042', quantity: 2 },
-    { id: '314', quantity: 6 },
-    { id: '088', quantity: 9 },
-]
+let items: CartItem[] = []
 
 const listeners = new Set<() => void>()
 
@@ -32,4 +28,20 @@ export function useCartItems() {
 export function setCartItems(update: (current: CartItem[]) => CartItem[]) {
     items = update(items)
     listeners.forEach((listener) => listener())
+}
+
+export function addToCart(id: string, quantity: number) {
+    if (!Number.isInteger(quantity) || quantity < 1) return
+
+    setCartItems((current) => {
+        if (!current.some((item) => item.id === id)) {
+            return [...current, { id, quantity }]
+        }
+
+        return current.map((item) =>
+            item.id === id
+                ? { ...item, quantity: item.quantity + quantity }
+                : item,
+        )
+    })
 }
