@@ -1,13 +1,16 @@
 import Header from '../../../components/header/Header'
 import Hero from '../../../components/hero/Hero'
+import NftCatalog from '../../../components/nftCatalog/NftCatalog'
+
 
 export default function Home() {
     return (
         <>
             <Header />
-            <Hero />
+
             <main>
-                {/* As seções da Home entram aqui, na ordem do Figma. */}
+                <Hero />
+                <NftCatalog />
             </main>
         </>
     )
