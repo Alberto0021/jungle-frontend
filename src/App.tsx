@@ -1,10 +1,9 @@
+import Header from "./Header/Header";
 
-export function App() {
-
+export default function App() {
   return (
-    <>
-      <h1 className="text-4xl font-bold text-purple-600">Olá Mundo</h1>
-    </>
+    <div className="min-h-screen bg-[#160e09]">
+      <Header />
+    </div>
   )
 }
-
