@@ -1,17 +1,20 @@
 import { useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { getNftById } from '../../api/nfts'
 import { setCartItems, useCartItems } from '../../lib/cartStore'
 import { nfts } from '../nftCatalog/nfts'
-import { useQueries } from '@tanstack/react-query'
-import { getNftById } from '../../api/nfts'
+import CartSummarySkeleton from './CartSummarySkeleton'
 
 const recommendationIds = ['118', '314', '088', '601', '603']
+
 const recommendations = recommendationIds.flatMap((id) => {
     const nft = nfts.find((item) => item.id === id)
     return nft ? [nft] : []
 })
 
 const columnClass = 'border-b border-border pb-2 font-medium'
+
 const quantityButtonClass =
     'grid size-8 place-items-center rounded-full bg-primary text-base text-primary-foreground enabled:cursor-pointer disabled:opacity-60 md:h-7 md:w-5'
 
@@ -49,6 +52,9 @@ export default function Cart() {
         })),
     })
 
+    const isLoading = nftQueries.some((query) => query.isPending)
+    const hasError = nftQueries.some((query) => query.isError)
+
     const rows = items.flatMap(({ id, quantity }, index) => {
         const nft = nfts.find((item) => item.id === id)
         if (!nft) return []
@@ -74,6 +80,12 @@ export default function Cart() {
 
     function removeItem(id: string) {
         setCartItems((current) => current.filter((item) => item.id !== id))
+    }
+
+    function retryFailedQueries() {
+        for (const query of nftQueries) {
+            if (query.isError) void query.refetch()
+        }
     }
 
     return (
@@ -169,9 +181,11 @@ export default function Cart() {
                                                     >
                                                         −
                                                     </button>
+
                                                     <output className="min-w-4 text-center" aria-live="polite">
                                                         {quantity}
                                                     </output>
+
                                                     <button
                                                         type="button"
                                                         aria-label="Aumentar quantidade"
@@ -216,85 +230,107 @@ export default function Cart() {
                         Resumo da carteira
                     </h2>
 
-                    <form
-                        className="md:mt-4"
-                        onSubmit={(event) => {
-                            event.preventDefault()
-                            setPromoMessage('Nenhum código promocional está ativo.')
-                        }}
-                    >
-                        <label htmlFor="promo-code" className="sr-only text-xs md:not-sr-only md:block">
-                            Código promocional
-                        </label>
-
-                        <div className="mt-1 flex">
-                            <input
-                                id="promo-code"
-                                value={promoCode}
-                                onChange={(event) => {
-                                    setPromoCode(event.currentTarget.value)
-                                    setPromoMessage('')
-                                }}
-                                required
-                                placeholder="Digite o código promocional..."
-                                className="min-w-0 flex-1 rounded-l-full border border-border bg-transparent px-3 text-xs placeholder:text-muted-foreground md:rounded-l-sm md:px-2"
-                            />
+                    {isLoading ? (
+                        <div role="status" aria-label="Carregando resumo do carrinho">
+                            <CartSummarySkeleton />
+                        </div>
+                    ) : hasError ? (
+                        <div className="space-y-3 md:mt-4">
+                            <p role="alert">Não foi possível carregar o carrinho.</p>
                             <button
-                                type="submit"
-                                className="h-10 shrink-0 cursor-pointer rounded-r-full bg-primary px-4 text-xs font-bold text-primary-foreground md:rounded-r-sm"
+                                type="button"
+                                onClick={retryFailedQueries}
+                                className="h-11 w-full cursor-pointer rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground md:h-10 md:rounded-sm"
                             >
-                                Aplicar
+                                Tentar novamente
                             </button>
                         </div>
+                    ) : (
+                        <>
+                            <form
+                                className="md:mt-4"
+                                onSubmit={(event) => {
+                                    event.preventDefault()
+                                    setPromoMessage('Nenhum código promocional está ativo.')
+                                }}
+                            >
+                                <label htmlFor="promo-code" className="sr-only text-xs md:not-sr-only md:block">
+                                    Código promocional
+                                </label>
 
-                        {promoMessage && (
-                            <p role="status" className="mt-2 text-xs text-muted-foreground">
-                                {promoMessage}
-                            </p>
-                        )}
-                    </form>
+                                <div className="mt-1 flex">
+                                    <input
+                                        id="promo-code"
+                                        value={promoCode}
+                                        onChange={(event) => {
+                                            setPromoCode(event.currentTarget.value)
+                                            setPromoMessage('')
+                                        }}
+                                        required
+                                        placeholder="Digite o código promocional..."
+                                        className="min-w-0 flex-1 rounded-l-full border border-border bg-transparent px-3 text-xs placeholder:text-muted-foreground md:rounded-l-sm md:px-2"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="h-10 shrink-0 cursor-pointer rounded-r-full bg-primary px-4 text-xs font-bold text-primary-foreground md:rounded-r-sm"
+                                    >
+                                        Aplicar
+                                    </button>
+                                </div>
 
-                    <dl className="mt-4 space-y-2 text-xs md:mt-5">
-                        <div className="flex justify-between gap-2">
-                            <dt>Subtotal</dt>
-                            <dd className="whitespace-nowrap">{formatEth(subtotal)}</dd>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                            <dt>Desconto do lançamento</dt>
-                            <dd className="whitespace-nowrap">− 0.00 ETH</dd>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                            <dt>Taxa de rede</dt>
-                            <dd className="whitespace-nowrap text-right">
-                                {formatEth(networkFee, 3)}
-                                <span className="mt-2 block text-[10px] text-primary">Taxa estimada</span>
-                            </dd>
-                        </div>
-                        <div className="flex justify-between gap-2 pt-2 text-sm font-bold md:pt-4">
-                            <dt>Total</dt>
-                            <dd className="whitespace-nowrap text-primary" aria-live="polite">
-                                {formatEth(subtotal + networkFee, 3)}
-                            </dd>
-                        </div>
-                    </dl>
+                                {promoMessage && (
+                                    <p role="status" className="mt-2 text-xs text-muted-foreground">
+                                        {promoMessage}
+                                    </p>
+                                )}
+                            </form>
 
-                    {rows.length > 0 && (
-                        <Link
-                            to="/pagamento"
-                            className="mt-4 flex h-11 w-full items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground md:h-10 md:rounded-sm"
-                        >
-                            Conectar e finalizar
-                        </Link>
+                            <dl className="mt-4 space-y-2 text-xs md:mt-5">
+                                <div className="flex justify-between gap-2">
+                                    <dt>Subtotal</dt>
+                                    <dd className="whitespace-nowrap">{formatEth(subtotal)}</dd>
+                                </div>
+
+                                <div className="flex justify-between gap-2">
+                                    <dt>Desconto do lançamento</dt>
+                                    <dd className="whitespace-nowrap">− 0.00 ETH</dd>
+                                </div>
+
+                                <div className="flex justify-between gap-2">
+                                    <dt>Taxa de rede</dt>
+                                    <dd className="whitespace-nowrap text-right">
+                                        {formatEth(networkFee, 3)}
+                                        <span className="mt-2 block text-[10px] text-primary">Taxa estimada</span>
+                                    </dd>
+                                </div>
+
+                                <div className="flex justify-between gap-2 pt-2 text-sm font-bold md:pt-4">
+                                    <dt>Total</dt>
+                                    <dd className="whitespace-nowrap text-primary" aria-live="polite">
+                                        {formatEth(subtotal + networkFee, 3)}
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            {rows.length > 0 && (
+                                <Link
+                                    to="/pagamento"
+                                    className="mt-4 flex h-11 w-full items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground md:h-10 md:rounded-sm"
+                                >
+                                    Conectar e finalizar
+                                </Link>
+                            )}
+
+                            <Link
+                                to="/"
+                                hash="catalogo"
+                                className={`mt-3 text-center text-xs text-primary hover:underline ${rows.length > 0 ? 'hidden md:block' : 'block'
+                                    }`}
+                            >
+                                Continuar explorando
+                            </Link>
+                        </>
                     )}
-
-                    <Link
-                        to="/"
-                        hash="catalogo"
-                        className={`mt-3 text-center text-xs text-primary hover:underline ${rows.length > 0 ? 'hidden md:block' : 'block'
-                            }`}
-                    >
-                        Continuar explorando
-                    </Link>
                 </aside>
             </div>
 
@@ -327,6 +363,7 @@ export default function Cart() {
                                         />
                                     </div>
                                 )}
+
                                 <p className="mt-2 text-xs">{nft.name} #{nft.id}</p>
                                 <p className="mt-1 text-sm font-bold text-primary">
                                     {nft.price.toFixed(2)} ETH

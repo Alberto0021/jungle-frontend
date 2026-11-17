@@ -8,6 +8,7 @@ import { nfts } from '../../../components/nftCatalog/nfts'
 import type { Nft } from '../../../components/nftCatalog'
 import { getNftById } from '../../../api/nfts'
 import { addToCart } from '../../../lib/cartStore'
+import DetailSkeleton from './DetailSkeleton'
 
 type Panel = 'details' | 'reviews'
 
@@ -434,9 +435,8 @@ export default function NftDetails() {
 
     function renderContent() {
         if (nftQuery.isPending) {
-            return <p role="status">Carregando NFT…</p>
+            return <DetailSkeleton />
         }
-
         if (nftQuery.isError) {
             const error = nftQuery.error
             const notFound = isAxiosError(error) && error.response?.status === 404

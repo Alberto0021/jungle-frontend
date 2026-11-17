@@ -29,3 +29,32 @@
   -webkit-text-fill-color: #f4eee8;
   caret-color: #f4eee8;
 }
+
+.kurio-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .kurio-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 10%),
+      transparent
+    );
+    animation: kurio-skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes kurio-skeleton-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}

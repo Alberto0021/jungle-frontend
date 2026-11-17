@@ -4,6 +4,7 @@ import { listNfts } from '../../api/nfts'
 import sage from '../../assets/macacoDeChapeu.png'
 import CatalogSidebar from '../catalogSidebar'
 import NftGrid from '../nftGrid'
+import { NftCatalogSkeleton } from '../ui/skeleton'
 
 export type Nft = {
     id: string
@@ -61,7 +62,7 @@ export default function NftCatalog() {
 
     function renderGrid() {
         if (nftQuery.isPending) {
-            return <p role="status">Carregando NFTs…</p>
+            return <NftCatalogSkeleton />
         }
 
         if (nftQuery.isError && !nftQuery.data) {
@@ -100,11 +101,11 @@ export default function NftCatalog() {
             style={{ fontFamily: '"Roboto Mono", monospace' }}
         >
             <div id="filtros-mobile" className="hidden target:block md:block">
-            <CatalogSidebar
-                filters={filters}
-                onChange={setFilters}
-                featuredImage={sage}
-            />
+                <CatalogSidebar
+                    filters={filters}
+                    onChange={setFilters}
+                    featuredImage={sage}
+                />
 
             </div>
 

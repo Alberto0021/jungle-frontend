@@ -38,7 +38,7 @@ export default function AuthModal({ dialogRef }: AuthModalProps) {
             className="fixed inset-0 m-0 h-dvh max-h-dvh w-full max-w-none overflow-y-auto overscroll-contain border-0 bg-[#160e09] p-0 text-[#f4eee8] backdrop:bg-transparent md:m-auto md:h-auto md:max-h-[calc(100dvh_-_2rem)] md:w-[calc(100%_-_2rem)] md:max-w-[500px] md:rounded-lg md:border-b-[10px] md:border-solid md:border-b-[#d99152] md:bg-[#241612]"
             style={{ fontFamily: '"Roboto Mono", monospace' }}
         >
-            <div className="relative min-h-full px-5 pt-16 pb-[calc(2rem+env(safe-area-inset-bottom))] md:min-h-[590px] md:pt-11 md:pb-12">
+            <div className="relative min-h-full px-6 pt-[clamp(4rem,14dvh,8rem)] pb-[calc(2rem+env(safe-area-inset-bottom))] md:min-h-[590px] md:pt-11 md:pb-12">
                 <form method="dialog" className="absolute top-1 right-2">
                     <button
                         type="submit"
@@ -49,13 +49,13 @@ export default function AuthModal({ dialogRef }: AuthModalProps) {
                     </button>
                 </form>
 
-                <p className="text-center text-lg font-bold tracking-[0.2em] md:hidden">
+                <p className="text-center text-[28px] font-bold tracking-[0.14em] md:hidden">
                     KURIO
                 </p>
 
                 <h2
                     id="auth-title"
-                    className="mt-10 mb-5 text-center text-sm font-bold md:sr-only"
+                    className="mt-[clamp(2rem,8dvh,5rem)] mb-7 text-center text-sm font-bold md:sr-only"
                 >
                     <span className="md:hidden">
                         {isLogin ? 'Entrar' : 'Criar perfil de colecionador'}
@@ -100,14 +100,14 @@ export default function AuthModal({ dialogRef }: AuthModalProps) {
                         <Link
                             to="/cadastro"
                             onClick={(event) => event.currentTarget.closest('dialog')?.close()}
-                            className="mt-4 block text-center text-xs text-[#d99152] hover:underline"
+                            className="mt-4 hidden text-center text-xs text-[#d99152] hover:underline md:block"
                         >
                             Abrir página de cadastro
                         </Link>
                     )}
                 </div>
 
-                <div className="mx-auto mt-6 mb-3 flex max-w-[340px] items-center gap-3 text-xs md:-mx-5 md:max-w-none">
+                <div className="mx-auto mt-8 mb-3 flex max-w-[340px] items-center gap-3 text-xs md:-mx-5 md:max-w-none">
                     <span aria-hidden="true" className="h-px flex-1 bg-[#3b271b]" />
                     Ou continue com
                     <span aria-hidden="true" className="h-px flex-1 bg-[#3b271b]" />
@@ -146,7 +146,7 @@ export default function AuthModal({ dialogRef }: AuthModalProps) {
                         onClick={() => changeMode(isLogin ? 'register' : 'login')}
                         className="min-h-11 cursor-pointer font-bold text-[#d99152] hover:underline"
                     >
-                        {isLogin ? 'Criar conta' : 'Entrar'}
+                        {isLogin ? 'Criar conta' : 'Entre'}
                     </button>
                 </p>
             </div>

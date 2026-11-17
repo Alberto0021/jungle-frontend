@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import type { ListNftsResponse } from '../../api/nfts'
 import { nfts } from '../../components/nftCatalog/nfts'
 
@@ -68,7 +68,21 @@ export const nftHandlers = [
         })
     }),
 
-    http.get('/api/nfts/:id', ({ params }) => {
+    http.get('/api/nfts/:id', async ({ params }) => {
+        const simulateFailure =
+            new URLSearchParams(window.location.search).get('mockCartLoading') === '1' &&
+            params.id === '042' &&
+            sessionStorage.getItem('kurio:test:cart-loading-retry') !== '1'
+
+        if (simulateFailure) {
+            await delay(1_500)
+
+            return HttpResponse.json(
+                { message: 'Falha temporária ao carregar o NFT.' },
+                { status: 503 },
+            )
+        }
+
         const nft = nfts.find((item) => item.id === params.id)
 
         if (!nft) {
