@@ -1,6 +1,9 @@
 import { useState, type ComponentProps } from 'react'
 import { startDemoSession } from '../../lib/demoSession'
 import { useNavigate } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
+import { loginAccount, registerAccount } from '../../api/auth'
 
 type AuthFormProps = {
     mode: 'login' | 'register'
@@ -15,31 +18,59 @@ export default function AuthForm({ mode }: AuthFormProps) {
     const [showPassword, setShowPassword] = useState(false)
     const [message, setMessage] = useState('')
 
-    const handleSubmit: NonNullable<ComponentProps<'form'>['onSubmit']> = (event) => {
-        event.preventDefault()
-        const data = new FormData(event.currentTarget)
+    const authMutation = useMutation({
+        mutationFn: (input: {
+            isRegister: boolean
+            username: string
+            email: string
+            password: string
+        }) => {
+            const { email, password, username } = input
+            return input.isRegister
+                ? registerAccount({ username, email, password })
+                : loginAccount({ email, password })
+        },
+    })
 
-        if (isRegister && data.get('password') !== data.get('confirmPassword')) {
+    const handleSubmit: NonNullable<ComponentProps<'form'>['onSubmit']> = async (event) => {
+        event.preventDefault()
+        if (authMutation.isPending) return
+
+        const form = event.currentTarget
+        const dialog = form.closest('dialog')
+        const data = new FormData(form)
+        const username = String(data.get('username') ?? '').trim()
+        const email = String(data.get('email') ?? '').trim()
+        const password = String(data.get('password') ?? '')
+
+        setMessage('')
+
+        if (isRegister && password !== data.get('confirmPassword')) {
             setMessage('As senhas precisam ser iguais.')
             return
         }
 
-        if (isRegister) {
-            const username = String(data.get('username') ?? '').trim()
-            const email = String(data.get('email') ?? '').trim()
+        try {
+            const account = await authMutation.mutateAsync({
+                isRegister,
+                username,
+                email,
+                password,
+            })
 
-            if (!username || !email) {
-                setMessage('Informe o nome de usuário e o e-mail.')
-                return
+            startDemoSession(account)
+            dialog?.close()
+
+            if (isRegister) {
+                void navigate({ to: '/perfil' })
             }
+        } catch (error) {
+            const message = isAxiosError<{ message: string }>(error)
+                ? error.response?.data?.message
+                : undefined
 
-            startDemoSession({ username, email })
-            event.currentTarget.closest('dialog')?.close()
-            void navigate({ to: '/perfil' })
-            return
+            setMessage(message ?? 'Não foi possível acessar sua conta. Tente novamente.')
         }
-
-        setMessage('O login ainda não está disponível. Use Criar conta para testar.')
     }
 
     return (

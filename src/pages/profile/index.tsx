@@ -1,7 +1,8 @@
-import { useState, type ComponentProps } from 'react'
+import { useState, useSyncExternalStore, type ComponentProps } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import Header from '../../components/header'
-import { getDemoSession } from '../../lib/demoSession'
+import { getDemoSession, subscribeDemoSession } from '../../lib/demoSession'
+
 
 const inputClass =
     'h-10 w-full min-w-0 rounded-[3px] border border-[#3b271b] bg-transparent px-3 outline-none focus:border-[#d99152]'
@@ -53,7 +54,7 @@ function PasswordField({ label, name }: { label: string; name: string }) {
 
 export default function ProfilePage() {
     const navigate = useNavigate()
-    const session = getDemoSession()
+    const session = useSyncExternalStore(subscribeDemoSession, getDemoSession)
     const [avatar, setAvatar] = useState('')
     const [message, setMessage] = useState('')
 
@@ -128,12 +129,14 @@ export default function ProfilePage() {
                         <div className="grid gap-7 sm:grid-cols-2">
                             <Field label="Nome de exibição" name="displayName" required />
                             <Field
+                                key={`username:${session?.email ?? ''}`}
                                 label="Nome de usuário"
                                 name="username"
                                 defaultValue={session?.username ?? ''}
                                 required
                             />
                             <Field
+                                key={`email:${session?.email ?? ''}`}
                                 label="E-mail"
                                 name="email"
                                 type="email"

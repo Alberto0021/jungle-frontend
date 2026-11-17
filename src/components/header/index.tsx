@@ -2,6 +2,12 @@ import { useRef } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { useCartItems } from '../../lib/cartStore'
 import AuthModal from '../authModal'
+import { useSyncExternalStore } from 'react'
+import {
+    endDemoSession,
+    getDemoSession,
+    subscribeDemoSession,
+} from '../../lib/demoSession'
 
 function navClass(active: boolean) {
     const base = 'block border-b-2 py-4'
@@ -12,6 +18,7 @@ function navClass(active: boolean) {
 }
 
 export default function Header() {
+    const session = useSyncExternalStore(subscribeDemoSession, getDemoSession)
     const authDialogRef = useRef<HTMLDialogElement>(null)
     const { pathname } = useLocation()
     const items = useCartItems()
@@ -98,8 +105,15 @@ export default function Header() {
 
                 <button
                     type="button"
-                    aria-haspopup="dialog"
-                    onClick={() => authDialogRef.current?.showModal()}
+                    aria-haspopup={session ? undefined : 'dialog'}
+                    onClick={() => {
+                        if (session) {
+                            endDemoSession()
+                            return
+                        }
+
+                        authDialogRef.current?.showModal()
+                    }}
                     className="inline-flex h-7 w-20 cursor-pointer items-center justify-center gap-1 rounded-[5px] bg-[#d99152] text-xs font-medium leading-none text-[#160e09]"
                 >
                     <svg
@@ -114,7 +128,7 @@ export default function Header() {
                     >
                         <path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8M10 12h11m-4-4 4 4-4 4" />
                     </svg>
-                    Entrar
+                    {session ? 'Sair' : 'Entrar'}
                 </button>
             </div>
 
