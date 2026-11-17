@@ -6,7 +6,30 @@ type CartItem = {
     quantity: number
 }
 
-let items: CartItem[] = []
+const CART_STORAGE_KEY = 'kurio:cart:v1'
+
+function loadCartItems(): CartItem[] {
+    try {
+        const raw = localStorage.getItem(CART_STORAGE_KEY)
+        if (raw === null) return []
+
+        const saved: unknown = JSON.parse(raw)
+        if (!Array.isArray(saved)) return []
+
+        return saved.filter((item): item is CartItem =>
+            item !== null &&
+            typeof item === 'object' &&
+            typeof item.id === 'string' &&
+            item.id.length > 0 &&
+            Number.isSafeInteger(item.quantity) &&
+            item.quantity > 0,
+        )
+    } catch {
+        return []
+    }
+}
+
+let items: CartItem[] = loadCartItems()
 let confirmedOrderItems: CartItem[] = []
 let confirmedOrder: Order | null = null
 
@@ -30,6 +53,13 @@ export function useCartItems() {
 
 export function setCartItems(update: (current: CartItem[]) => CartItem[]) {
     items = update(items)
+
+    try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+    } catch {
+        // Se o navegador bloquear o armazenamento, mantenha o carrinho em memória.
+    }
+
     listeners.forEach((listener) => listener())
 }
 

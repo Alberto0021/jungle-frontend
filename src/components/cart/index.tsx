@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { setCartItems, useCartItems } from '../../lib/cartStore'
 import { nfts } from '../nftCatalog/nfts'
+import { useQueries } from '@tanstack/react-query'
+import { getNftById } from '../../api/nfts'
 
 const recommendationIds = ['118', '314', '088', '601', '603']
 const recommendations = recommendationIds.flatMap((id) => {
@@ -39,11 +41,22 @@ export default function Cart() {
     const [promoCode, setPromoCode] = useState('')
     const [promoMessage, setPromoMessage] = useState('')
 
-    const rows = items.flatMap(({ id, quantity }) => {
+    const nftQueries = useQueries({
+        queries: items.map(({ id }) => ({
+            queryKey: ['nfts', 'detail', id],
+            queryFn: ({ signal }) => getNftById(id, signal),
+            retry: false,
+        })),
+    })
+
+    const rows = items.flatMap(({ id, quantity }, index) => {
         const nft = nfts.find((item) => item.id === id)
         if (!nft) return []
 
-        const unitPrice = Math.round(nft.price * 1000)
+        const liveNft = nftQueries[index]?.data
+        const price = liveNft ? Number(liveNft.price) : nft.price
+        const unitPrice = Math.round(price * 1000)
+
         return [{ nft, quantity, unitPrice, lineTotal: unitPrice * quantity }]
     })
 

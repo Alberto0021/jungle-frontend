@@ -117,3 +117,7 @@ Validar navegação por teclado, foco visível, fechamento e retorno de foco em 
 3. Demonstrar eventos pelo Socket.IO com reconexão e impedir a confirmação de uma cotação antiga.
 4. Executar os testes Playwright, gerar baselines e relatório e rodar as auditorias Lighthouse.
 5. Validar o build de demonstração, publicar a aplicação e registrar a URL no README.
+
+instalei agora
+
+npm install @mswjs/socket.io-binding

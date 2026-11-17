@@ -2,14 +2,28 @@ import { http, HttpResponse } from 'msw'
 import type { ListNftsResponse } from '../../api/nfts'
 import { nfts } from '../../components/nftCatalog/nfts'
 
-function serializeNft({
-    price,
-    previousPrice,
-    ...nft
-}: (typeof nfts)[number]): ListNftsResponse['items'][number] {
+type CatalogNft = (typeof nfts)[number]
+
+const priceOverrides = new Map<string, number>()
+
+export function setMockNftPrice(id: string, price: number): boolean {
+    if (!Number.isFinite(price) || price < 0) return false
+    if (!nfts.some((nft) => nft.id === id)) return false
+
+    priceOverrides.set(id, price)
+    return true
+}
+
+function getCurrentPrice(nft: CatalogNft): number {
+    return priceOverrides.get(nft.id) ?? nft.price
+}
+
+function serializeNft(nft: CatalogNft): ListNftsResponse['items'][number] {
+    const { previousPrice, ...fields } = nft
+
     return {
-        ...nft,
-        price: String(price),
+        ...fields,
+        price: String(getCurrentPrice(nft)),
         ...(previousPrice === undefined
             ? {}
             : { previousPrice: String(previousPrice) }),
@@ -42,7 +56,9 @@ export const nftHandlers = [
             .filter((nft) => {
                 if (collection && nft.collection !== collection) return false
                 if (network && nft.network !== network) return false
-                return nft.price >= minPrice && nft.price <= maxPrice
+
+                const price = getCurrentPrice(nft)
+                return price >= minPrice && price <= maxPrice
             })
             .map(serializeNft)
 
