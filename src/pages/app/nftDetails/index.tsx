@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { Link, useParams, useNavigate, } from '@tanstack/react-router'
+import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import Header from '../../../components/header'
 import Footer from '../../../components/footer'
 import { nfts } from '../../../components/nftCatalog/nfts'
 import type { Nft } from '../../../components/nftCatalog'
-import { useQuery } from '@tanstack/react-query'
 import { getNftById } from '../../../api/nfts'
-import { isAxiosError } from 'axios'
 import { addToCart } from '../../../lib/cartStore'
-
 
 type Panel = 'details' | 'reviews'
 
@@ -54,17 +53,17 @@ function getProductDetails(nft: Nft): ProductDetails {
 function panelClass(active: boolean) {
     const base = 'cursor-pointer border-b-2 pb-2'
 
-    if (active) return `${base} border-primary font-bold text-primary`
-
-    return `${base} border-transparent hover:text-primary`
+    return active
+        ? `${base} border-primary font-bold text-primary`
+        : `${base} border-transparent hover:text-primary`
 }
 
 function editionClass(active: boolean) {
     const base = 'cursor-pointer rounded-full border px-2 py-0.5 text-xs'
 
-    if (active) return `${base} border-primary text-primary`
-
-    return `${base} border-border text-muted-foreground`
+    return active
+        ? `${base} border-primary text-primary`
+        : `${base} border-border text-muted-foreground`
 }
 
 function NftGallery({ image, name }: { image: string | undefined; name: string }) {
@@ -81,21 +80,19 @@ function NftGallery({ image, name }: { image: string | undefined; name: string }
 
     const images = [image, image, image, image]
 
-    function selectImage(index: number) {
-        setSelected(index)
-        setZoomed(false)
-    }
-
     return (
-        <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[100px_minmax(0,1fr)] sm:gap-7">
-            <div role="group" aria-label="Miniaturas do NFT" className="grid gap-3">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-3 md:grid-cols-[100px_minmax(0,1fr)] md:gap-7">
+            <div role="group" aria-label="Miniaturas do NFT" className="hidden gap-3 md:grid">
                 {images.map((thumbnail, index) => (
                     <button
                         key={index}
                         type="button"
                         aria-label={`Selecionar miniatura ${index + 1}`}
                         aria-pressed={selected === index}
-                        onClick={() => selectImage(index)}
+                        onClick={() => {
+                            setSelected(index)
+                            setZoomed(false)
+                        }}
                         className="aspect-square cursor-pointer overflow-hidden rounded-lg border border-transparent aria-pressed:border-primary"
                     >
                         <img src={thumbnail} alt="" className="size-full object-cover" />
@@ -103,7 +100,7 @@ function NftGallery({ image, name }: { image: string | undefined; name: string }
                 ))}
             </div>
 
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-[#251710] p-3 sm:p-5">
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#251710] md:rounded-lg md:p-5">
                 <div className="size-full overflow-hidden rounded-[24px]">
                     <img
                         src={images[selected] ?? image}
@@ -112,7 +109,6 @@ function NftGallery({ image, name }: { image: string | undefined; name: string }
                         className="size-full object-cover transition-transform data-[zoomed=true]:scale-150"
                     />
                 </div>
-
                 <button
                     type="button"
                     aria-label="Ampliar imagem"
@@ -120,14 +116,7 @@ function NftGallery({ image, name }: { image: string | undefined; name: string }
                     onClick={() => setZoomed((value) => !value)}
                     className="absolute top-3 right-3 grid size-8 cursor-pointer place-items-center rounded-full bg-background/80"
                 >
-                    <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="size-5"
-                    >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-5">
                         <circle cx="10.5" cy="10.5" r="6.5" />
                         <path d="m15.5 15.5 5 5" />
                     </svg>
@@ -161,14 +150,7 @@ function ShareLinks({ name }: { name: string }) {
                 aria-label="Compartilhar por e-mail"
                 className="hover:text-primary"
             >
-                <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="size-4"
-                >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-4">
                     <rect x="2" y="5" width="20" height="14" rx="2" />
                     <path d="m3 7 9 6 9-6" />
                 </svg>
@@ -203,7 +185,6 @@ function RelatedNfts({ nft }: { nft: Nft }) {
             <h2 id="related-nfts-title" className="border-b border-border pb-2 text-sm font-bold text-primary">
                 Mais desta coleção
             </h2>
-
             <ul className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {relatedNfts.map((item) => (
                     <li key={item.id}>
@@ -222,7 +203,6 @@ function RelatedNfts({ nft }: { nft: Nft }) {
                                     />
                                 </div>
                             )}
-
                             <p className="mt-2 text-xs">{item.name} #{item.id}</p>
                             <p className="mt-1 text-sm font-bold text-primary">
                                 {item.price.toFixed(2)} ETH
@@ -246,8 +226,9 @@ function NftProduct({ nft }: { nft: Nft }) {
     const name = `${nft.name} #${nft.id}`
     const tokenId = nft.id.padStart(4, '0')
     const quantityLimit = editionLimits[edition]
+    const priceLabel = `${nft.price.toFixed(2)} ETH`
     const quantityButtonClass =
-        'grid h-12 w-8 place-items-center rounded-full bg-primary text-2xl text-primary-foreground enabled:cursor-pointer'
+        'grid size-9 place-items-center rounded-full bg-primary text-xl text-primary-foreground enabled:cursor-pointer disabled:opacity-60 md:h-12 md:w-8 md:text-2xl'
 
     function selectEdition(value: Edition) {
         setEdition(value)
@@ -261,11 +242,13 @@ function NftProduct({ nft }: { nft: Nft }) {
 
     function renderPanel() {
         if (panel === 'reviews') {
-            if (details.reviewCount === 0) {
-                return <p>Este NFT ainda não tem avaliações cadastradas.</p>
-            }
-
-            return <p>As avaliações deste NFT são demonstrativas.</p>
+            return (
+                <p>
+                    {details.reviewCount === 0
+                        ? 'Este NFT ainda não tem avaliações cadastradas.'
+                        : 'As avaliações deste NFT são demonstrativas.'}
+                </p>
+            )
         }
 
         return (
@@ -284,20 +267,31 @@ function NftProduct({ nft }: { nft: Nft }) {
 
     return (
         <>
-            <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,48fr)_minmax(0,50fr)]">
-                <NftGallery image={nft.image} name={name} />
+            <div className="grid items-start gap-4 md:gap-8 lg:grid-cols-[minmax(0,48fr)_minmax(0,50fr)]">
+                <div className="relative min-w-0">
+                    <button
+                        type="button"
+                        aria-label="Favoritar"
+                        aria-pressed={favorite}
+                        onClick={() => setFavorite((value) => !value)}
+                        className="absolute right-0 -top-[58px] grid size-11 cursor-pointer place-items-center rounded-full bg-[#251710] text-xl text-primary md:hidden"
+                    >
+                        <span aria-hidden="true">{favorite ? '♥' : '♡'}</span>
+                    </button>
+
+                    <NftGallery image={nft.image} name={name} />
+                </div>
 
                 <section aria-labelledby="nft-title" className="min-w-0">
-                    <h1 id="nft-title" className="text-[28px] leading-9 font-bold">
+                    <h1 id="nft-title" className="text-xl leading-tight font-bold md:text-[28px] md:leading-9">
                         {name}
                     </h1>
 
                     <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border pb-2">
-                        <p className="flex items-baseline gap-3">
-                            <strong className="text-[22px] text-primary">
-                                {nft.price.toFixed(2)} ETH
+                        <p className="hidden items-baseline gap-3 md:flex">
+                            <strong className="whitespace-nowrap text-sm text-primary">
+                                {priceLabel}
                             </strong>
-
                             {nft.previousPrice !== undefined && (
                                 <del className="text-sm text-muted-foreground">
                                     {nft.previousPrice.toFixed(2)} ETH
@@ -311,12 +305,8 @@ function NftProduct({ nft }: { nft: Nft }) {
                             className="flex cursor-pointer items-center gap-1.5 text-left text-sm hover:text-primary"
                         >
                             <span aria-hidden="true" className="shrink-0 tracking-[2px]">
-                                <span className="text-primary">
-                                    {'★'.repeat(details.rating)}
-                                </span>
-                                <span className="text-muted-foreground">
-                                    {'★'.repeat(5 - details.rating)}
-                                </span>
+                                <span className="text-primary">{'★'.repeat(details.rating)}</span>
+                                <span className="text-muted-foreground">{'★'.repeat(5 - details.rating)}</span>
                             </span>
                             <span>{details.reviewCount} avaliações de colecionadores</span>
                         </button>
@@ -344,8 +334,8 @@ function NftProduct({ nft }: { nft: Nft }) {
                         </div>
                     </fieldset>
 
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                        <div role="group" aria-label="Quantidade" className="flex items-center gap-3">
+                    <div className="fixed inset-x-0 bottom-0 z-30 flex flex-wrap items-center justify-between gap-2 border-t border-border bg-[#251710] px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:static md:mt-3 md:gap-3 md:border-0 md:bg-transparent md:p-0">
+                        <div role="group" aria-label="Quantidade" className="flex items-center gap-2 md:gap-3">
                             <button
                                 type="button"
                                 aria-label="Diminuir quantidade"
@@ -355,9 +345,7 @@ function NftProduct({ nft }: { nft: Nft }) {
                             >
                                 −
                             </button>
-
                             <output aria-live="polite">{quantity}</output>
-
                             <button
                                 type="button"
                                 aria-label="Aumentar quantidade"
@@ -369,26 +357,31 @@ function NftProduct({ nft }: { nft: Nft }) {
                             </button>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
+                        <strong className="whitespace-nowrap text-sm text-primary md:hidden">
+                            {priceLabel}
+                        </strong>
+
+                        <div className="flex items-center gap-2">
                             <button
                                 type="button"
                                 onClick={() => {
                                     addToCart(nft.id, quantity)
                                     void navigate({ to: '/carrinho' })
                                 }}
-                                className="h-10 w-[130px] cursor-pointer rounded-md bg-primary text-sm font-bold text-primary-foreground"
+                                className="h-11 cursor-pointer rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground md:h-10 md:w-[130px] md:rounded-md md:px-0"
                             >
                                 COMPRAR
                             </button>
 
                             <button
                                 type="button"
+                                aria-label="Favoritar"
                                 aria-pressed={favorite}
                                 onClick={() => setFavorite((value) => !value)}
-                                className="inline-flex h-10 w-[130px] cursor-pointer items-center justify-center gap-2 rounded-md border border-primary text-sm text-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                                className="hidden h-10 w-[130px] cursor-pointer items-center justify-center gap-2 rounded-md border border-primary text-sm text-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground md:inline-flex"
                             >
-                                <span aria-hidden="true" className="text-xl">♡</span>
-                                Favoritar
+                                <span aria-hidden="true" className="text-xl">{favorite ? '♥' : '♡'}</span>
+                                <span>Favoritar</span>
                             </button>
                         </div>
                     </div>
@@ -398,7 +391,6 @@ function NftProduct({ nft }: { nft: Nft }) {
                         <p>Coleção: {details.collection}</p>
                         <p>Atributos: {details.attributes}</p>
                     </div>
-
                     <ShareLinks name={name} />
                 </section>
             </div>
@@ -413,7 +405,6 @@ function NftProduct({ nft }: { nft: Nft }) {
                     >
                         Detalhes do NFT
                     </button>
-
                     <button
                         type="button"
                         aria-pressed={panel === 'reviews'}
@@ -423,7 +414,6 @@ function NftProduct({ nft }: { nft: Nft }) {
                         Avaliações de colecionadores ({details.reviewCount})
                     </button>
                 </div>
-
                 <div className="mt-4 text-sm leading-6 text-muted-foreground">
                     {renderPanel()}
                 </div>
@@ -436,7 +426,6 @@ function NftProduct({ nft }: { nft: Nft }) {
 
 export default function NftDetails() {
     const { nftId } = useParams({ from: '/mercado/$nftId' })
-
     const nftQuery = useQuery({
         queryKey: ['nfts', 'detail', nftId],
         queryFn: ({ signal }) => getNftById(nftId, signal),
@@ -455,11 +444,8 @@ export default function NftDetails() {
             return (
                 <>
                     <h1 role="alert" className="text-2xl font-bold">
-                        {notFound
-                            ? 'NFT não encontrado'
-                            : 'Não foi possível carregar o NFT'}
+                        {notFound ? 'NFT não encontrado' : 'Não foi possível carregar o NFT'}
                     </h1>
-
                     {!notFound && (
                         <button
                             type="button"
@@ -469,12 +455,7 @@ export default function NftDetails() {
                             Tentar novamente
                         </button>
                     )}
-
-                    <Link
-                        to="/"
-                        hash="catalogo"
-                        className="mt-4 inline-block text-primary"
-                    >
+                    <Link to="/" hash="catalogo" className="mt-4 inline-block text-primary">
                         Voltar ao catálogo
                     </Link>
                 </>
@@ -485,9 +466,7 @@ export default function NftDetails() {
         const nft: Nft = {
             ...item,
             price: Number(price),
-            ...(previousPrice === undefined
-                ? {}
-                : { previousPrice: Number(previousPrice) }),
+            ...(previousPrice === undefined ? {} : { previousPrice: Number(previousPrice) }),
         }
 
         return <NftProduct key={nft.id} nft={nft} />
@@ -495,26 +474,37 @@ export default function NftDetails() {
 
     return (
         <>
-            <Header />
+            <div className="hidden md:block">
+                <Header />
+            </div>
+
+            <header className="flex min-h-14 items-center px-4 md:hidden">
+                <Link
+                    to="/"
+                    hash="catalogo"
+                    aria-label="Voltar ao catálogo"
+                    className="grid size-11 place-items-center rounded-full bg-[#251710] text-primary"
+                >
+                    <span aria-hidden="true">←</span>
+                </Link>
+            </header>
 
             <main
-                className="mx-auto w-[calc(100%_-_2rem)] max-w-[1200px] pt-8 pb-12"
+                className="mx-auto w-[calc(100%_-_2rem)] max-w-[1200px] pt-2 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pt-8 md:pb-12"
                 style={{ fontFamily: '"Roboto Mono", monospace' }}
             >
-                <nav aria-label="Localização" className="mb-3 flex gap-2 text-sm font-bold">
-                    <Link to="/" className="hover:text-primary">
-                        Início
-                    </Link>
+                <nav aria-label="Localização" className="mb-3 hidden gap-2 text-sm font-bold md:flex">
+                    <Link to="/" className="hover:text-primary">Início</Link>
                     <span aria-hidden="true">/</span>
-                    <Link to="/" hash="catalogo" className="hover:text-primary">
-                        Mercado
-                    </Link>
+                    <Link to="/" hash="catalogo" className="hover:text-primary">Mercado</Link>
                 </nav>
 
                 {renderContent()}
             </main>
 
-            <Footer />
+            <div className="hidden md:block">
+                <Footer />
+            </div>
         </>
     )
 }

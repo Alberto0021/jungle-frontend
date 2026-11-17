@@ -1,0 +1,174 @@
+# Kurio — Marketplace de NFTs
+
+Aplicação frontend em React e TypeScript desenvolvida para o [Desafio Frontend — Marketplace de NFTs](https://www.figma.com/design/Ff0SksUi7UFtPWUO8kyNtw/Frontend-Challenge?node-id=0-1).
+
+O projeto reúne catálogo, detalhes do NFT, carrinho, pagamento, confirmação do pedido e conta do colecionador. O fluxo de compra é demonstrativo: autenticação, carteiras e pedidos são exercitados com APIs simuladas, sem integração com carteiras reais ou transferência de ETH.
+
+As decisões técnicas, os contratos e as limitações estão em [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Execução local
+
+Pré-requisitos: Node.js e npm compatíveis com o projeto. Use a versão indicada pelo repositório, caso exista uma configuração em `engines`, `.nvmrc` ou equivalente.
+
+Na raiz do projeto:
+
+```bash
+npm ci
+npm run dev
+```
+
+Abra `http://localhost:5173` ou a URL exibida pelo Vite no terminal.
+
+Se `public/mockServiceWorker.js` estiver ausente, gere o arquivo antes de iniciar a aplicação:
+
+```bash
+npx msw init public --save
+```
+
+Para preparar o navegador usado nos testes:
+
+```bash
+npx playwright install chromium
+```
+
+`npm ci` usa o `package-lock.json`. Os comandos abaixo registram como as dependências foram adicionadas inicialmente:
+
+```bash
+npm install @tanstack/react-router @tanstack/react-query axios socket.io-client
+npm install -D tailwindcss @tailwindcss/vite
+npm install -D msw @playwright/test lighthouse
+```
+
+## Stack e uso no projeto
+
+| Tecnologia         | Papel                                                          | Evidência ou etapa pendente                                                                                   |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| React e TypeScript | Telas, componentes e contratos tipados                         | Usados nas páginas e componentes revisados                                                                    |
+| TanStack Router    | Rotas, parâmetros e navegação                                  | Usado no detalhe, carrinho e checkout; proteção e retorno ao fluxo ainda precisam de cobertura                |
+| TanStack Query     | Consultas e estado remoto                                      | Usado nas consultas de detalhe e carteiras; mutations, invalidação e isolamento precisam de revisão           |
+| Axios              | Cliente das requisições REST                                   | Tratamento de erros Axios visível no detalhe; revisar os módulos de API para documentar o contrato completo   |
+| Tailwind CSS       | Estilização e adaptação entre tamanhos de tela                 | Usado nas telas revisadas                                                                                     |
+| shadcn/ui          | Componentes de interface                                       | Identificar os componentes efetivamente usados e registrar a adaptação visual                                 |
+| MSW                | Simulação das requisições                                      | Há respostas do Service Worker no teste local; habilitação por configuração e reset precisam ser documentados |
+| Socket.IO          | Atualizações de catálogo e pedidos                             | Registrar transporte, integração com MSW e evidência dos eventos                                              |
+| Playwright         | Testes de navegador e regressão visual                         | Dependência prevista no setup; comprovar execução e cobertura                                                 |
+| Lighthouse         | Auditorias de performance, acessibilidade, boas práticas e SEO | Dependência prevista no setup; publicar configuração e resultados medidos                                     |
+
+## Configuração, contas e cenários
+
+| Item                   | Situação                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Variáveis de ambiente  | Confirmar no código quais variáveis são lidas. Registrar nome, valor de exemplo, finalidade e comportamento padrão em `.env.example`  |
+| Ativação dos mocks     | Confirmar a configuração que inicia o worker no desenvolvimento, nos testes e no build de demonstração                                |
+| Contas de demonstração | Publicar duas contas **fictícias** das fixtures, com instruções de acesso. Usar dados diferentes entre elas para verificar isolamento |
+| Seleção de cenário     | Registrar o mecanismo real e os valores aceitos para sucesso, lentidão, sessão expirada, falhas e conflitos                           |
+| Reset de cenário       | Registrar a ação ou comando real que restaura dados, sessão e condições de rede ao estado inicial definido pelas fixtures             |
+| URL pública            | Pendente de registro e validação após o deploy                                                                                        |
+
+O arquivo `mockServiceWorker.js` é parte do setup do MSW. A aplicação ainda precisa iniciar o worker para que as requisições sejam interceptadas. Não inclua credenciais pessoais no README ou nas fixtures.
+
+## Fluxos e status de validação
+
+| Fluxo              | Evidência atual                                                                                   | O que falta validar                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Início e catálogo  | Catálogo mobile visível com cards e preços                                                        | Busca, filtros combinados, ordenação, paginação, URL, histórico e resultados fora de ordem                    |
+| Detalhe do NFT     | Emerald Ape `#042` exibido em hospedagem local, com imagem, edição, quantidade e barra de compra  | Acesso direto com erro `404`, edição indisponível, limite de quantidade e persistência de favoritos por conta |
+| Carrinho           | Duas unidades recebidas de **Comprar**; subtotal `2.38 ETH`, taxa `0.016 ETH` e total `2.396 ETH` | Remoção, cupom, persistência após refresh/login, separação por edição e atualização de preço/disponibilidade  |
+| Pagamento          | Tela mobile exibida; consulta de carteiras retornou `401` no último teste mostrado                | Restabelecer a consulta autenticada, selecionar carteira e rede, revisar a cotação e confirmar o pedido       |
+| Confirmação        | Um recibo demonstrativo foi exibido em teste anterior                                             | Revalidar o mesmo fluxo com duas unidades após resolver o `401`; testar refresh e recusa                      |
+| Login e cadastro   | Interfaces observadas durante a revisão                                                           | Validação, conflito de cadastro, retorno ao fluxo anterior e isolamento entre contas                          |
+| Perfil e carteiras | Tela de perfil observada; carteira Principal exibida em teste anterior                            | Persistência das alterações, avatar, senha, carteira Reserva e comportamento de logout                        |
+
+## Como reproduzir o teste de compra
+
+1. Com o carrinho vazio, abra `/mercado/042`.
+2. Mude a quantidade para **2** e clique em **Comprar**.
+3. Confira o carrinho: **2 unidades**, **2.38 ETH** de subtotal e **2.396 ETH** de total, com taxa de **0.016 ETH** e sem desconto.
+4. Clique em **Conectar e finalizar**.
+5. Com uma sessão de demonstração aceita pela API, verifique se as carteiras aparecem e se o total da revisão corresponde ao carrinho.
+6. Confirme no ambiente simulado. O recibo deve mostrar **×2** e o total do pedido aceito. Depois, confira que o carrinho removeu somente as quantidades compradas.
+
+**Bloqueio observado no passo 5:** a consulta `wallets` retornou `401` enquanto a interface ainda exibia dados da sessão. O checkout mostrou o formulário manual e bloqueou o envio no primeiro campo obrigatório vazio. A causa do `401` ainda não foi confirmada. Para reproduzir e investigar: abra **DevTools → Network → Fetch/XHR**, filtre por `wallets`, recarregue `/pagamento` e confira **Status** e **Response** da chamada mais recente.
+
+## Cenários de falha exigidos
+
+Os gatilhos exatos devem ser documentados conforme a configuração real dos mocks. O resultado esperado de cada cenário é:
+
+| Cenário                                    | Resultado esperado                                                           |
+| ------------------------------------------ | ---------------------------------------------------------------------------- |
+| Consulta sem resultados                    | Estado vazio com ação para recuperar a navegação                             |
+| Rede lenta ou resposta fora de ordem       | Skeleton durante a espera; resposta antiga não sobrescreve os filtros atuais |
+| Falha de conexão ou HTTP 5xx               | Mensagem de erro e possibilidade de tentar novamente                         |
+| Sessão expirada ou acesso sem autenticação | Solicitar login e permitir retomar o fluxo sem perder o carrinho             |
+| Cadastro em conflito                       | Mostrar erro no campo relevante e manter os demais dados preenchidos         |
+| Cupom inválido ou expirado                 | Explicar a falha e preservar valores coerentes no resumo                     |
+| Preço alterado ou edição esgotada          | Atualizar a cotação e exigir nova confirmação                                |
+| Timeout após criar o pedido                | Retomar a mesma tentativa e recuperar o pedido sem duplicar a compra         |
+| Pedido recusado                            | Mostrar a recusa, preservar o carrinho e não abrir recibo de sucesso         |
+| Pedido pendente durante desconexão         | Recuperar o estado via API após reconexão ou refresh                         |
+| Pedido confirmado                          | Mostrar o recibo e remover do carrinho apenas as quantidades compradas       |
+
+## Comandos de verificação
+
+| Tarefa                                                                | Comando                           |
+| --------------------------------------------------------------------- | --------------------------------- |
+| Desenvolvimento                                                       | `npm run dev`                     |
+| Build otimizado                                                       | `npm run build`                   |
+| Prévia do build                                                       | `npm run preview`                 |
+| Listar scripts disponíveis, incluindo lint e tipos quando cadastrados | `npm run`                         |
+| Preparar Chromium                                                     | `npx playwright install chromium` |
+| Rodar E2E                                                             | `npx playwright test`             |
+| Abrir relatório HTML, quando gerado                                   | `npx playwright show-report`      |
+
+Os nomes dos scripts de **lint** e **verificação de tipos** devem ser confirmados no `package.json`. Os comandos de teste acima são chamadas diretas ao Playwright; a execução depende dos testes e da configuração do projeto.
+
+### Cobertura Playwright exigida
+
+- Catálogo: busca, filtros combinados, ordenação, paginação e histórico.
+- Detalhe: acesso direto e recurso inexistente.
+- Sessão: cadastro, login, expiração, logout e troca de usuário.
+- Favoritos: sucesso, falha e recuperação após atualização otimista.
+- Carrinho: quantidade, remoção, cupom e persistência após refresh e login.
+- Compra: pedido confirmado, recusado, clique repetido e timeout sem duplicação.
+- Conta: perfil, avatar, senha e carteiras, incluindo erros de validação.
+- Tempo real: preço alterado, eventos antigos e duplicados, desconexão e retomada.
+- Acessibilidade: teclado, foco de diálogos e mensagens dos formulários.
+- Carregamento: skeletons, falhas e nova tentativa.
+
+Executar em Chromium mobile e desktop, com estado isolado por teste. Entregar baselines visuais de **início, detalhe, carrinho e pagamento**, além de relatório HTML e traces das falhas. Os fluxos REST devem usar os handlers MSW, e os fluxos de tempo real devem passar por `socket.io-client`.
+
+## Performance e Lighthouse
+
+Auditar **início** e **detalhe do NFT** no build otimizado, com o cenário padrão dos mocks. São quatro combinações de página e perfil (mobile e desktop), com **três execuções cada**, totalizando **12 medições**.
+
+Exemplo para a página inicial, com o preview ativo. Ajuste a porta conforme o terminal:
+
+```bash
+npx lighthouse http://localhost:4173/ --output=html --output=json --output-path=./lighthouse-home-mobile-1
+npx lighthouse http://localhost:4173/ --preset=desktop --output=html --output=json --output-path=./lighthouse-home-desktop-1
+```
+
+Repita para `/mercado/042` e salve cada execução com nome distinto. Versione a configuração usada. Registre a mediana de cada categoria por página e perfil, os valores de LCP, CLS e TBT, as versões das ferramentas e as condições de execução.
+
+| Categoria      | Meta | Resultado |
+| -------------- | ---: | --------- |
+| Performance    | ≥ 90 | A medir   |
+| Acessibilidade | ≥ 95 | A medir   |
+| Boas práticas  | ≥ 95 | A medir   |
+| SEO            | ≥ 90 | A medir   |
+
+## Evidências da entrega
+
+| Critério                           | Pontos | O que anexar ou demonstrar                             |
+| ---------------------------------- | -----: | ------------------------------------------------------ |
+| Fidelidade visual e responsividade |     20 | Comparação com Figma em mobile, tablet e desktop       |
+| Fluxos e experiência               |     20 | Compra até o recibo, conta e recuperação de falhas     |
+| Integração e estado                |     15 | Contratos REST, queries, mutations, cache e isolamento |
+| Tempo real                         |     10 | Eventos, reconexão e reconciliação com a API           |
+| Mocking                            |     10 | Fixtures, escolha de cenário, persistência e reset     |
+| Testes                             |     10 | Relatório Playwright, traces e baselines               |
+| Acessibilidade                     |      5 | Teclado, foco, contraste, labels e feedback            |
+| Performance                        |      5 | Relatórios Lighthouse e análise de resultados          |
+| Arquitetura e documentação         |      5 | Setup reproduzível, contratos e decisões técnicas      |
+
+Antes de entregar, validar a execução a partir de um checkout limpo, conferir as larguras **390, 768 e 1440 px** e publicar as URLs do repositório e da aplicação. Na versão publicada, testar acesso direto e refresh de rotas internas, mocks e fluxo de tempo real.

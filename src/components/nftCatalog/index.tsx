@@ -96,14 +96,17 @@ export default function NftCatalog() {
         <section
             id="catalogo"
             aria-label="Catálogo de NFTs"
-            className="mx-auto mt-12 grid w-[calc(100%_-_2rem)] max-w-[1200px] scroll-mt-6 items-start gap-8 lg:mt-24 lg:grid-cols-[minmax(220px,310px)_minmax(0,1fr)] lg:gap-12"
+            className="mx-auto mt-4 grid w-[calc(100%_-_2rem)] md:mt-12 max-w-[1200px] scroll-mt-6 items-start gap-8 lg:mt-24 lg:grid-cols-[minmax(220px,310px)_minmax(0,1fr)] lg:gap-12"
             style={{ fontFamily: '"Roboto Mono", monospace' }}
         >
+            <div id="filtros-mobile" className="hidden target:block md:block">
             <CatalogSidebar
                 filters={filters}
                 onChange={setFilters}
                 featuredImage={sage}
             />
+
+            </div>
 
             {renderGrid()}
         </section>

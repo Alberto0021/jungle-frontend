@@ -86,7 +86,7 @@ function NftResults({ nfts }: { nfts: Nft[] }) {
     }
 
     return (
-        <ul className="grid gap-x-8 gap-y-14 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-x-3 gap-y-6 md:gap-x-8 md:gap-y-14 xl:grid-cols-3">
             {nfts.map((nft) => (
                 <li key={nft.id}>
                     <NftCard nft={nft} />
@@ -126,7 +126,7 @@ export default function NftGrid({ nfts }: { nfts: Nft[] }) {
                     ))}
                 </div>
 
-                <label className="flex flex-wrap items-center gap-1">
+                <label className="hidden flex-wrap items-center gap-1 md:flex group-has-[#filtros-mobile:target]:flex">
                     Ordenar por:
                     <select
                         value={sort}

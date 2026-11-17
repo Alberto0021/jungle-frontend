@@ -79,13 +79,47 @@ export default function CheckoutPage() {
 
     return (
         <>
-            <Header />
+            <div className="hidden md:block">
+                <Header />
+            </div>
+
+            <header className="flex min-h-14 items-center gap-3 px-4 md:hidden">
+                <Link
+                    to="/carrinho"
+                    aria-label="Voltar ao carrinho"
+                    className="grid size-11 shrink-0 place-items-center"
+                >
+                    <span
+                        aria-hidden="true"
+                        className="grid size-8 place-items-center rounded-full bg-[#302017] text-primary"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            className="size-4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                        >
+                            <path
+                                d="m14 6-6 6 6 6"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </span>
+                </Link>
+
+                <h1 className="text-base font-bold">Pagamento com carteira</h1>
+            </header>
 
             <main
-                className="mx-auto w-[calc(100%_-_2rem)] max-w-[1200px] pt-7"
+                className="mx-auto w-[calc(100%_-_2rem)] max-w-[1200px] pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pt-7 md:pb-0"
                 style={{ fontFamily: '"Roboto Mono", monospace' }}
             >
-                <nav aria-label="Localização" className="mb-5 flex flex-wrap gap-2 text-xs">
+                <nav
+                    aria-label="Localização"
+                    className="mb-5 hidden flex-wrap gap-2 text-xs md:flex"
+                >
                     <Link to="/" className="hover:text-primary">
                         Início
                     </Link>
@@ -97,22 +131,47 @@ export default function CheckoutPage() {
                     <span aria-current="page">Pagamento</span>
                 </nav>
 
-                <h1 className="sr-only">Pagamento</h1>
+                <h1 className="hidden md:sr-only md:block">Pagamento</h1>
 
                 <form
+                    id="checkout-form"
                     noValidate
                     onSubmit={handleSubmit}
-                    className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]"
+                    className="grid items-start gap-6 md:gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]"
                 >
-                    <CheckoutForm />
-                    <CheckoutSummary />
+                    <div className="contents">
+                        <div className="min-w-0 md:contents">
+                            <CheckoutForm />
+                        </div>
+
+                        <div className="min-w-0 md:contents">
+                            <CheckoutSummary />
+                        </div>
+                    </div>
                 </form>
 
-                {message && <p role="status" className="mt-4 text-sm">{message}</p>}
+                {message && (
+                    <p role="status" className="mt-4 text-sm">
+                        {message}
+                    </p>
+                )}
+
+                <div className="fixed inset-x-0 bottom-0 z-40 bg-background px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
+                    <button
+                        type="submit"
+                        form="checkout-form"
+                        className="flex h-11 w-full items-center justify-center rounded-full bg-[linear-gradient(90deg,#d99152,#b47846)] text-xs font-bold text-primary-foreground"
+                    >
+                        Confirmar compra
+                    </button>
+                </div>
             </main>
 
             <AuthModal dialogRef={authDialogRef} />
-            <Footer />
+
+            <div className="hidden md:block">
+                <Footer />
+            </div>
         </>
     )
 }
