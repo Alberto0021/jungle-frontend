@@ -1,5 +1,7 @@
 # Arquitetura — Kurio
 
+**Repositório:** [Alberto0021/jungle-frontend](https://github.com/Alberto0021/jungle-frontend)
+
 Este documento descreve o que foi observado no código revisado e os pontos que precisam ser comprovados antes da entrega. Os contratos-alvo vêm do enunciado; caminhos e formatos ainda não conferidos não são apresentados como API implementada.
 
 ## Organização do frontend
