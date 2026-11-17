@@ -14,3 +14,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+.wallet-form select {
+  color-scheme: dark;
+}
+
+.wallet-form select option {
+  background-color: #251710;
+  color: #f4eee8;
+}
+
+.wallet-form input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #160e09 inset;
+  -webkit-text-fill-color: #f4eee8;
+  caret-color: #f4eee8;
+}

@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type ComponentProps } from 'react'
+import { startDemoSession } from '../../lib/demoSession'
+import { useNavigate } from '@tanstack/react-router'
 
 type AuthFormProps = {
     mode: 'login' | 'register'
@@ -8,11 +10,12 @@ const fieldClass =
     'h-10 w-full rounded-[5px] border border-[#3b271b] bg-transparent px-4 text-sm text-[#f4eee8] outline-none placeholder:text-[#bfa077] focus:border-[#d99152]'
 
 export default function AuthForm({ mode }: AuthFormProps) {
+    const navigate = useNavigate()
     const isRegister = mode === 'register'
     const [showPassword, setShowPassword] = useState(false)
     const [message, setMessage] = useState('')
 
-    function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    const handleSubmit: NonNullable<ComponentProps<'form'>['onSubmit']> = (event) => {
         event.preventDefault()
         const data = new FormData(event.currentTarget)
 
@@ -21,7 +24,22 @@ export default function AuthForm({ mode }: AuthFormProps) {
             return
         }
 
-        setMessage('Formulário validado. A autenticação ainda não está conectada.')
+        if (isRegister) {
+            const username = String(data.get('username') ?? '').trim()
+            const email = String(data.get('email') ?? '').trim()
+
+            if (!username || !email) {
+                setMessage('Informe o nome de usuário e o e-mail.')
+                return
+            }
+
+            startDemoSession({ username, email })
+            event.currentTarget.closest('dialog')?.close()
+            void navigate({ to: '/perfil' })
+            return
+        }
+
+        setMessage('O login ainda não está disponível. Use Criar conta para testar.')
     }
 
     return (

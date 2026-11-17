@@ -1,11 +1,16 @@
+import { useRef } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
+import AuthModal from '../../components/authModal'
 import Header from '../../components/header'
 import CheckoutForm from '../../components/checkoutForm'
 import CheckoutSummary from '../../components/checkoutSummary'
 import Footer from '../../components/footer'
+import { confirmCart } from '../../lib/cartStore'
+import { getDemoSession } from '../../lib/demoSession'
 
 export default function CheckoutPage() {
     const navigate = useNavigate()
+    const authDialogRef = useRef<HTMLDialogElement>(null)
 
     return (
         <>
@@ -33,6 +38,19 @@ export default function CheckoutPage() {
                     noValidate
                     onSubmit={(event) => {
                         event.preventDefault()
+
+                        if (!getDemoSession()) {
+                            authDialogRef.current?.showModal()
+                            return
+                        }
+
+                        if (!event.currentTarget.reportValidity()) return
+
+                        if (!confirmCart()) {
+                            void navigate({ to: '/carrinho' })
+                            return
+                        }
+
                         void navigate({ to: '/confirmacao' })
                     }}
                     className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]"
@@ -42,6 +60,7 @@ export default function CheckoutPage() {
                 </form>
             </main>
 
+            <AuthModal dialogRef={authDialogRef} />
             <Footer />
         </>
     )

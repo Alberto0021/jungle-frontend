@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useCartItems } from '../../lib/cartStore'
+import { getConfirmedOrderItems } from '../../lib/cartStore'
 import { nfts } from '../nftCatalog/nfts'
 
 function formatEth(milliEth: number, decimals = 2) {
@@ -7,6 +7,7 @@ function formatEth(milliEth: number, decimals = 2) {
 }
 
 function ThankYouIcon() {
+
     return (
         <svg
             aria-hidden="true"
@@ -38,7 +39,7 @@ function ThankYouIcon() {
 }
 
 export default function OrderConfirmation() {
-    const items = useCartItems()
+    const items = getConfirmedOrderItems()
 
     const rows = items.flatMap(({ id, quantity }) => {
         const nft = nfts.find((item) => item.id === id)

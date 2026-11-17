@@ -45,3 +45,18 @@ export function addToCart(id: string, quantity: number) {
         )
     })
 }
+
+let confirmedOrderItems: CartItem[] = []
+
+export function getConfirmedOrderItems() {
+    return confirmedOrderItems
+}
+
+export function confirmCart() {
+    if (items.length === 0) return false
+
+    confirmedOrderItems = items.map((item) => ({ ...item }))
+    setCartItems(() => [])
+
+    return true
+}

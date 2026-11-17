@@ -5,6 +5,9 @@ import CartPage from './pages/cart'
 import CheckoutPage from './pages/checkout'
 import OrderConfirmationPage from './pages/orderConfirmation'
 import RegisterPage from './pages/register'
+import ProfilePage from './pages/profile'
+import WalletsPage from './pages/wallets'
+
 
 const rootRoute = createRootRoute({ component: Outlet })
 
@@ -61,6 +64,18 @@ const registerRoute = createRoute({
     component: RegisterPage,
 })
 
+const profileRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/perfil',
+    component: ProfilePage,
+})
+
+const walletsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/perfil/carteiras',
+    component: WalletsPage,
+})
+
 export const router = createRouter({
     routeTree: rootRoute.addChildren([
         homeRoute,
@@ -69,6 +84,8 @@ export const router = createRouter({
         checkoutRoute,
         orderConfirmationRoute,
         registerRoute,
+        profileRoute,
+        walletsRoute,
     ]),
 })
 
