@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { getConfirmedOrderItems } from '../../lib/cartStore'
+import { getConfirmedOrder, getConfirmedOrderItems } from '../../lib/cartStore'
 import { nfts } from '../nftCatalog/nfts'
 
 function formatEth(milliEth: number, decimals = 2) {
@@ -7,7 +7,6 @@ function formatEth(milliEth: number, decimals = 2) {
 }
 
 function ThankYouIcon() {
-
     return (
         <svg
             aria-hidden="true"
@@ -39,7 +38,8 @@ function ThankYouIcon() {
 }
 
 export default function OrderConfirmation() {
-    const items = getConfirmedOrderItems()
+    const order = getConfirmedOrder()
+    const items = order?.items ?? getConfirmedOrderItems()
 
     const rows = items.flatMap(({ id, quantity }) => {
         const nft = nfts.find((item) => item.id === id)
@@ -84,27 +84,36 @@ export default function OrderConfirmation() {
                 </div>
             ) : (
                 <>
-                    <dl className="grid grid-cols-2 gap-y-3 border-y border-primary/60 px-4 py-3 text-xs text-muted-foreground sm:grid-cols-[1.28fr_1.15fr_1fr_.85fr]">
-                        <div className="px-3">
-                            <dt className="font-bold">ID da transação</dt>
-                            <dd>Não gerado</dd>
+                    <dl className="grid grid-cols-2 gap-y-3 border-y border-primary/60 px-4 py-3 text-xs text-muted-foreground sm:grid-cols-4">
+                        <div className="min-w-0 px-3">
+                            <dt className="font-bold">ID do pedido</dt>
+                            <dd className="break-all">{order?.id ?? '—'}</dd>
                         </div>
                         <div className="border-l border-primary/60 px-3">
                             <dt>Data</dt>
-                            <dd>—</dd>
+                            <dd>
+                                {order?.createdAt ? (
+                                    <time dateTime={order.createdAt}>
+                                        {new Date(order.createdAt).toLocaleString('pt-BR', {
+                                            dateStyle: 'short',
+                                            timeStyle: 'short',
+                                        })}
+                                    </time>
+                                ) : '—'}
+                            </dd>
                         </div>
                         <div className="px-3 sm:border-l sm:border-primary/60">
                             <dt>Total</dt>
                             <dd className="whitespace-nowrap">{total}</dd>
                         </div>
-                        <div className="border-l border-primary/60 px-3">
+                        <div className="min-w-0 border-l border-primary/60 px-3">
                             <dt className="font-bold">Carteira</dt>
-                            <dd>Não conectada</dd>
+                            <dd className="break-all">{order?.walletAddress ?? '—'}</dd>
                         </div>
                     </dl>
 
                     <div className="px-4 pb-10 pt-4 sm:px-9">
-                        <h2 className="mb-1 text-[13px] font-bold">Detalhes da transação</h2>
+                        <h2 className="mb-1 text-[13px] font-bold">Detalhes do pedido</h2>
 
                         <table className="w-full text-left text-xs">
                             <thead className="border-b border-border">
@@ -151,11 +160,6 @@ export default function OrderConfirmation() {
                             <dt className="font-bold">Total</dt>
                             <dd className="text-right font-bold text-primary">{total}</dd>
                         </dl>
-
-                        <p className="mt-2 border-t border-border pt-2 text-center text-xs leading-[18px] text-muted-foreground">
-                            Pedido de demonstração. Nenhum pagamento foi enviado
-                            e nenhum NFT foi transferido para a carteira.
-                        </p>
 
                         <div className="mt-4 flex justify-center">
                             <button

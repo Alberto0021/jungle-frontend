@@ -1,16 +1,81 @@
-import { useRef } from 'react'
+import { useRef, useState, type SubmitEvent } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import AuthModal from '../../components/authModal'
 import Header from '../../components/header'
 import CheckoutForm from '../../components/checkoutForm'
 import CheckoutSummary from '../../components/checkoutSummary'
 import Footer from '../../components/footer'
-import { confirmCart } from '../../lib/cartStore'
+import { createOrder } from '../../api/orders'
+import { applyConfirmedOrder, useCartItems } from '../../lib/cartStore'
 import { getDemoSession } from '../../lib/demoSession'
 
 export default function CheckoutPage() {
     const navigate = useNavigate()
     const authDialogRef = useRef<HTMLDialogElement>(null)
+    const items = useCartItems()
+    const [message, setMessage] = useState('')
+    const submitting = useRef(false)
+    const attempt = useRef<{ signature: string; id: string } | null>(null)
+
+    async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+        event.preventDefault()
+        if (submitting.current) return
+
+        const session = getDemoSession()
+        if (!session) {
+            authDialogRef.current?.showModal()
+            return
+        }
+
+        if (items.length === 0) {
+            void navigate({ to: '/carrinho' })
+            return
+        }
+
+        const form = event.currentTarget
+        if (!form.reportValidity()) return
+
+        const address = new FormData(form).get('walletAddress')
+        const walletAddress = typeof address === 'string' ? address.trim() : ''
+
+        if (!/^0x[0-9a-fA-F]{40}$/.test(walletAddress)) {
+            setMessage('Informe um endereço de carteira válido.')
+            return
+        }
+
+        const snapshot = items.map(({ id, quantity }) => ({ id, quantity }))
+        const signature = JSON.stringify([session.email, snapshot, walletAddress])
+        const previous = attempt.current
+        const currentAttempt =
+            previous && previous.signature === signature
+                ? previous
+                : { signature, id: crypto.randomUUID() }
+
+        attempt.current = currentAttempt
+        submitting.current = true
+        setMessage('Confirmando compra…')
+
+        try {
+            const order = await createOrder(snapshot, currentAttempt.id, walletAddress)
+            if (getDemoSession() !== session) return
+
+            if (order.status !== 'confirmed') {
+                setMessage('O pedido não foi confirmado. Seu carrinho foi mantido.')
+                return
+            }
+
+            applyConfirmedOrder(order)
+            attempt.current = null
+            setMessage('')
+            void navigate({ to: '/confirmacao' })
+        } catch {
+            if (getDemoSession() === session) {
+                setMessage('Não foi possível confirmar a compra. Seu carrinho foi mantido.')
+            }
+        } finally {
+            submitting.current = false
+        }
+    }
 
     return (
         <>
@@ -36,28 +101,14 @@ export default function CheckoutPage() {
 
                 <form
                     noValidate
-                    onSubmit={(event) => {
-                        event.preventDefault()
-
-                        if (!getDemoSession()) {
-                            authDialogRef.current?.showModal()
-                            return
-                        }
-
-                        if (!event.currentTarget.reportValidity()) return
-
-                        if (!confirmCart()) {
-                            void navigate({ to: '/carrinho' })
-                            return
-                        }
-
-                        void navigate({ to: '/confirmacao' })
-                    }}
+                    onSubmit={handleSubmit}
                     className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]"
                 >
                     <CheckoutForm />
                     <CheckoutSummary />
                 </form>
+
+                {message && <p role="status" className="mt-4 text-sm">{message}</p>}
             </main>
 
             <AuthModal dialogRef={authDialogRef} />

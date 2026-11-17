@@ -19,17 +19,22 @@ export type Wallets = {
     secondaryHint: string
 }
 
-export async function getWallets(account: string, signal?: AbortSignal) {
+function walletAuthHeaders() {
+    const token = sessionStorage.getItem('kurio:demo-token')
+    return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+export async function getWallets(_account: string, signal?: AbortSignal) {
     const { data } = await axios.get<Wallets>('/api/wallets', {
-        params: { account },
+        headers: walletAuthHeaders(),
         signal,
     })
     return data
 }
 
-export async function saveWallets(account: string, wallets: Wallets) {
+export async function saveWallets(_account: string, wallets: Wallets) {
     const { data } = await axios.put<Wallets>('/api/wallets', wallets, {
-        params: { account },
+        headers: walletAuthHeaders(),
     })
     return data
 }

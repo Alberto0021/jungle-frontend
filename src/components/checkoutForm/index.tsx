@@ -1,3 +1,8 @@
+import { useSyncExternalStore } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { getWallets } from '../../api/wallets'
+import { getDemoSession, subscribeDemoSession } from '../../lib/demoSession'
+
 const fieldClass =
     'mt-1 block w-full rounded-sm border border-[#3b271b] bg-transparent px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground'
 
@@ -7,23 +12,68 @@ const textFields = [
 ] as const
 
 export default function CheckoutForm() {
+    const session = useSyncExternalStore(subscribeDemoSession, getDemoSession)
+    const email = session?.email
+
+    const walletsQuery = useQuery({
+        queryKey: ['wallets', email],
+        queryFn: ({ signal }) => getWallets(email ?? '', signal),
+        enabled: Boolean(email),
+        retry: false,
+        refetchOnWindowFocus: false,
+    })
+
+    const wallets = walletsQuery.data
+    const wallet = wallets?.primary
+    const walletType = wallet?.type === 'extension' ? 'browser' : (wallet?.type ?? '')
+    const secondaryWallet = wallets?.sameAsPrimary
+        ? (wallet?.address ?? '')
+        : (wallets?.secondary?.address ?? wallets?.secondaryHint ?? '')
+
     return (
-        <section aria-labelledby="collector-profile-title">
+        <section
+            key={JSON.stringify([email, wallet, secondaryWallet])}
+            aria-labelledby="collector-profile-title"
+        >
             <h2 id="collector-profile-title" className="mb-3 text-sm font-bold">
                 Perfil do colecionador
             </h2>
 
+            {walletsQuery.isLoading && (
+                <p role="status" className="mb-3 text-xs">Carregando carteira…</p>
+            )}
+
+            {walletsQuery.isError && (
+                <p role="alert" className="mb-3 text-xs">
+                    Não foi possível carregar a carteira. Você pode preencher os campos manualmente.
+                </p>
+            )}
+
             <div className="grid gap-x-5 gap-y-4 text-xs sm:grid-cols-2">
                 {textFields.map(({ name, label, required }) => (
                     <label key={name}>
-                        {label}<span className="text-primary">*</span>
-                        <input name={name} className={fieldClass} required={required} />
+                        {label}{required && <span className="text-primary">*</span>}
+                        <input
+                            name={name}
+                            className={fieldClass}
+                            required={required}
+                            defaultValue={
+                                name === 'displayName'
+                                    ? (wallet?.displayName ?? '')
+                                    : (session?.username ?? '')
+                            }
+                        />
                     </label>
                 ))}
 
                 <label>
                     Rede<span className="text-primary">*</span>
-                    <select name="network" className={fieldClass} required defaultValue="">
+                    <select
+                        name="network"
+                        className={fieldClass}
+                        required
+                        defaultValue={wallet?.network ?? ''}
+                    >
                         <option className="bg-background" value="" disabled>Selecione uma rede</option>
                         <option className="bg-background" value="ethereum">Ethereum</option>
                         <option className="bg-background" value="polygon">Polygon</option>
@@ -42,6 +92,7 @@ export default function CheckoutForm() {
                         name="walletAddress"
                         className={fieldClass}
                         placeholder="Endereço da carteira"
+                        defaultValue={wallet?.address ?? ''}
                         required
                     />
                 </label>
@@ -52,12 +103,18 @@ export default function CheckoutForm() {
                         name="secondaryWallet"
                         className={fieldClass}
                         placeholder="ENS ou carteira secundária (opcional)"
+                        defaultValue={secondaryWallet}
                     />
                 </label>
 
                 <label>
                     Tipo de carteira<span className="text-primary">*</span>
-                    <select name="walletType" className={fieldClass} required defaultValue="">
+                    <select
+                        name="walletType"
+                        className={fieldClass}
+                        required
+                        defaultValue={walletType}
+                    >
                         <option className="bg-background" value="" disabled>Selecione uma carteira</option>
                         <option className="bg-background" value="browser">Carteira do navegador</option>
                         <option className="bg-background" value="mobile">Carteira móvel</option>
@@ -67,12 +124,24 @@ export default function CheckoutForm() {
 
                 <label>
                     Código de indicação<span className="text-primary">*</span>
-                    <input name="referralCode" className={fieldClass} required />
+                    <input
+                        name="referralCode"
+                        className={fieldClass}
+                        defaultValue={wallet?.referral ?? ''}
+                        required
+                    />
                 </label>
 
                 <label>
                     E-mail<span className="text-primary">*</span>
-                    <input name="email" type="email" autoComplete="email" className={fieldClass} required />
+                    <input
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        className={fieldClass}
+                        defaultValue={wallet?.email ?? email ?? ''}
+                        required
+                    />
                 </label>
 
                 <label>
@@ -82,6 +151,7 @@ export default function CheckoutForm() {
                             aria-label="Nome ENS"
                             name="ensName"
                             className={`${fieldClass} mt-0 min-w-0`}
+                            defaultValue={wallet?.ens.replace(/\.eth$/i, '') ?? ''}
                             required
                         />
                         <span className="grid shrink-0 place-items-center rounded-sm border border-[#3b271b] px-3">

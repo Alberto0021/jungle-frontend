@@ -7,10 +7,51 @@ type Account = {
     passwordHash: number[]
 }
 
+type MockSession = {
+    email: string
+    expiresAt: number
+}
+
 const accountsKey = 'kurio:demo-accounts'
+const sessionsKey = 'kurio:demo-sessions'
+const sessionDuration = 60 * 60 * 1000
 
 function readAccounts(): Account[] {
     return JSON.parse(localStorage.getItem(accountsKey) ?? '[]')
+}
+
+function readSessions(): Record<string, MockSession> {
+    return JSON.parse(localStorage.getItem(sessionsKey) ?? '{}')
+}
+
+function issueSession(account: Pick<Account, 'username' | 'email'>) {
+    const token = crypto.randomUUID()
+    const sessions = readSessions()
+
+    sessions[token] = {
+        email: account.email,
+        expiresAt: Date.now() + sessionDuration,
+    }
+
+    localStorage.setItem(sessionsKey, JSON.stringify(sessions))
+
+    return { username: account.username, email: account.email, token }
+}
+
+export function getAuthenticatedAccount(request: Request) {
+    const token = request.headers.get('Authorization')?.match(/^Bearer (\S+)$/i)?.[1]
+    if (!token) return null
+
+    const sessions = readSessions()
+    if (!Object.prototype.hasOwnProperty.call(sessions, token)) return null
+
+    const session = sessions[token]
+    if (!session || session.expiresAt <= Date.now()) return null
+
+    const account = readAccounts().find((item) => item.email === session.email)
+    if (!account) return null
+
+    return { id: account.email, username: account.username, email: account.email }
 }
 
 async function hashPassword(password: string, salt: Uint8Array<ArrayBuffer>) {
@@ -52,6 +93,8 @@ export const authHandlers = [
             )
         }
 
+
+
         const salt = crypto.getRandomValues(new Uint8Array(16))
         const passwordHash = await hashPassword(password, salt)
         const accounts = readAccounts()
@@ -63,10 +106,11 @@ export const authHandlers = [
             )
         }
 
-        accounts.push({ username, email, salt: Array.from(salt), passwordHash })
+        const account = { username, email, salt: Array.from(salt), passwordHash }
+        accounts.push(account)
         localStorage.setItem(accountsKey, JSON.stringify(accounts))
 
-        return HttpResponse.json({ username, email }, { status: 201 })
+        return HttpResponse.json(issueSession(account), { status: 201 })
     }),
 
     http.post('/api/auth/login', async ({ request }) => {
@@ -76,8 +120,11 @@ export const authHandlers = [
         if (account && password) {
             const hash = await hashPassword(password, Uint8Array.from(account.salt))
 
-            if (hash.every((byte, index) => byte === account.passwordHash[index])) {
-                return HttpResponse.json({ username: account.username, email: account.email })
+            if (
+                hash.length === account.passwordHash.length &&
+                hash.every((byte, index) => byte === account.passwordHash[index])
+            ) {
+                return HttpResponse.json(issueSession(account))
             }
         }
 
@@ -85,5 +132,41 @@ export const authHandlers = [
             { message: 'E-mail ou senha incorretos.' },
             { status: 401 },
         )
+    }),
+
+    http.get('/api/profile', ({ request }) => {
+        const account = getAuthenticatedAccount(request)
+        if (!account) {
+            return HttpResponse.json({ message: 'Sessão necessária.' }, { status: 401 })
+        }
+
+        const saved = localStorage.getItem(`kurio:profile:${account.id}`)
+        return HttpResponse.json(saved ? JSON.parse(saved) : null)
+    }),
+
+    http.put('/api/profile', async ({ request }) => {
+        const body = await request.json().catch(() => null) as Record<string, unknown> | null
+        const account = getAuthenticatedAccount(request)
+        if (!account) {
+            return HttpResponse.json({ message: 'Sessão necessária.' }, { status: 401 })
+        }
+
+        const { displayName, ensName, walletNickname } = body ?? {}
+        if (
+            typeof displayName !== 'string' || !displayName.trim() ||
+            typeof ensName !== 'string' || !ensName.trim() ||
+            typeof walletNickname !== 'string' || !walletNickname.trim()
+        ) {
+            return HttpResponse.json({ message: 'Confira os dados do perfil.' }, { status: 400 })
+        }
+
+        const profile = {
+            displayName: displayName.trim(),
+            ensName: ensName.trim(),
+            walletNickname: walletNickname.trim(),
+        }
+
+        localStorage.setItem(`kurio:profile:${account.id}`, JSON.stringify(profile))
+        return HttpResponse.json(profile)
     }),
 ]

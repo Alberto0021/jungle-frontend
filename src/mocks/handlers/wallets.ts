@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type { Wallet, Wallets } from '../../api/wallets'
+import { getAuthenticatedAccount } from './auth'
 
 const emptyWallets: Wallets = {
     primary: null,
@@ -8,9 +9,8 @@ const emptyWallets: Wallets = {
     secondaryHint: '',
 }
 
-function storageKey(request: Request) {
-    const account = new URL(request.url).searchParams.get('account')
-    return account ? `kurio:wallets:${account}` : null
+function unauthorized() {
+    return HttpResponse.json({ message: 'Sessão necessária.' }, { status: 401 })
 }
 
 function isWallet(value: unknown): value is Wallet {
@@ -27,8 +27,7 @@ function isWallet(value: unknown): value is Wallet {
             const item = wallet[field]
             return typeof item === 'string' && item.trim().length > 0
         }) &&
-        typeof wallet.address === 'string' &&
-        /^0x[0-9a-fA-F]{40}$/.test(wallet.address) &&
+        /^0x[0-9a-fA-F]{40}$/.test(String(wallet.address)) &&
         ['ethereum', 'polygon', 'base'].includes(String(wallet.network)) &&
         ['mobile', 'extension', 'hardware'].includes(String(wallet.type)) &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(wallet.email))
@@ -36,23 +35,18 @@ function isWallet(value: unknown): value is Wallet {
 }
 
 export const walletHandlers = [
-    http.get('/api/wallets', ({ request }) => {
-        const key = storageKey(request)
-        if (!key) {
-            return HttpResponse.json({ message: 'Sessão necessária.' }, { status: 401 })
-        }
+    http.get('/api/wallets', async ({ request }) => {
+        const account = await getAuthenticatedAccount(request)
+        if (!account) return unauthorized()
 
-        const saved = localStorage.getItem(key)
+        const saved = localStorage.getItem(`kurio:wallets:${account.id}`)
         return HttpResponse.json<Wallets>(saved ? JSON.parse(saved) : emptyWallets)
     }),
 
     http.put('/api/wallets', async ({ request }) => {
-        const key = storageKey(request)
-        if (!key) {
-            return HttpResponse.json({ message: 'Sessão necessária.' }, { status: 401 })
-        }
-
         const body = await request.json().catch(() => null) as Partial<Wallets> | null
+        const account = await getAuthenticatedAccount(request)
+        if (!account) return unauthorized()
 
         if (
             !body ||
@@ -61,7 +55,10 @@ export const walletHandlers = [
             typeof body.sameAsPrimary !== 'boolean' ||
             typeof body.secondaryHint !== 'string'
         ) {
-            return HttpResponse.json({ message: 'Confira os dados da carteira.' }, { status: 400 })
+            return HttpResponse.json(
+                { message: 'Confira os dados da carteira.' },
+                { status: 400 },
+            )
         }
 
         const wallets: Wallets = {
@@ -71,7 +68,7 @@ export const walletHandlers = [
             secondaryHint: body.secondaryHint,
         }
 
-        localStorage.setItem(key, JSON.stringify(wallets))
+        localStorage.setItem(`kurio:wallets:${account.id}`, JSON.stringify(wallets))
         return HttpResponse.json(wallets)
     }),
 ]

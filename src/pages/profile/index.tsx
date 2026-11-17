@@ -1,8 +1,9 @@
 import { useState, useSyncExternalStore, type ComponentProps } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Header from '../../components/header'
 import { getDemoSession, subscribeDemoSession } from '../../lib/demoSession'
-
+import { getProfile, saveProfile } from '../../api/profile'
 
 const inputClass =
     'h-10 w-full min-w-0 rounded-[3px] border border-[#3b271b] bg-transparent px-3 outline-none focus:border-[#d99152]'
@@ -10,10 +11,7 @@ const inputClass =
 const buttonClass =
     'min-h-10 cursor-pointer rounded-[3px] bg-[#d99152] px-5 font-bold text-[#160e09] hover:brightness-110'
 
-function Field({
-    label,
-    ...props
-}: ComponentProps<'input'> & { label: string }) {
+function Field({ label, ...props }: ComponentProps<'input'> & { label: string }) {
     return (
         <label className="block space-y-2">
             <span>
@@ -58,14 +56,40 @@ export default function ProfilePage() {
     const [avatar, setAvatar] = useState('')
     const [message, setMessage] = useState('')
 
+    const queryClient = useQueryClient()
+    const profileKey = ['profile', session?.email] as const
+
+    const profileQuery = useQuery({
+        queryKey: profileKey,
+        queryFn: ({ signal }) => getProfile(signal),
+        enabled: Boolean(session),
+        retry: false,
+    })
+
+    const saveMutation = useMutation({
+        mutationFn: saveProfile,
+        onSuccess: (profile) => {
+            queryClient.setQueryData(profileKey, profile)
+            void navigate({ to: '/perfil/carteiras' })
+        },
+        onError: () => setMessage('Não foi possível salvar o perfil. Tente novamente.'),
+    })
+
     const handleSubmit: NonNullable<ComponentProps<'form'>['onSubmit']> = (event) => {
         event.preventDefault()
+
+        if (!session) {
+            setMessage('Entre na sua conta para salvar o perfil.')
+            return
+        }
+
+        if (saveMutation.isPending || profileQuery.isLoading) return
+
         const data = new FormData(event.currentTarget)
         const current = String(data.get('currentPassword') ?? '')
         const next = String(data.get('newPassword') ?? '')
         const confirmation = String(data.get('confirmNewPassword') ?? '')
 
-        // O navegador pode preencher a senha atual sozinho.
         if (next || confirmation) {
             if (!current || !next || !confirmation) {
                 setMessage('Preencha os três campos para alterar a senha.')
@@ -81,7 +105,12 @@ export default function ProfilePage() {
             return
         }
 
-        void navigate({ to: '/perfil/carteiras' })
+        setMessage('')
+        saveMutation.mutate({
+            displayName: String(data.get('displayName') ?? '').trim(),
+            ensName: String(data.get('ensName') ?? '').trim(),
+            walletNickname: String(data.get('walletNickname') ?? '').trim(),
+        })
     }
 
     return (
@@ -125,23 +154,30 @@ export default function ProfilePage() {
                         Perfil do colecionador
                     </h1>
 
-                    <form onSubmit={handleSubmit} onChange={() => setMessage('')}>
+                    <form
+                        key={JSON.stringify([session?.email, profileQuery.data])}
+                        onSubmit={handleSubmit}
+                        onChange={() => setMessage('')}
+                    >
                         <div className="grid gap-7 sm:grid-cols-2">
-                            <Field label="Nome de exibição" name="displayName" required />
                             <Field
-                                key={`username:${session?.email ?? ''}`}
-                                label="Nome de usuário"
-                                name="username"
-                                defaultValue={session?.username ?? ''}
+                                label="Nome de exibição"
+                                name="displayName"
+                                defaultValue={profileQuery.data?.displayName ?? ''}
                                 required
                             />
                             <Field
-                                key={`email:${session?.email ?? ''}`}
+                                label="Nome de usuário"
+                                name="username"
+                                value={session?.username ?? ''}
+                                readOnly
+                            />
+                            <Field
                                 label="E-mail"
                                 name="email"
                                 type="email"
-                                defaultValue={session?.email ?? ''}
-                                required
+                                value={session?.email ?? ''}
+                                readOnly
                             />
 
                             <div>
@@ -152,19 +188,37 @@ export default function ProfilePage() {
                                     <span className="grid place-items-center rounded-[3px] border border-[#3b271b] px-3">
                                         .eth
                                     </span>
-                                    <input id="ensName" name="ensName" className={inputClass} required />
+                                    <input
+                                        id="ensName"
+                                        name="ensName"
+                                        defaultValue={profileQuery.data?.ensName ?? ''}
+                                        className={inputClass}
+                                        required
+                                    />
                                 </div>
                             </div>
 
-                            <Field label="Apelido da carteira" name="walletNickname" required />
+                            <Field
+                                label="Apelido da carteira"
+                                name="walletNickname"
+                                defaultValue={profileQuery.data?.walletNickname ?? ''}
+                                required
+                            />
 
                             <div>
                                 <p className="mb-2">Avatar</p>
                                 <div className="flex flex-wrap items-center gap-3">
                                     {avatar ? (
-                                        <img src={avatar} alt="Prévia do avatar" className="size-12 rounded-full object-cover" />
+                                        <img
+                                            src={avatar}
+                                            alt="Prévia do avatar"
+                                            className="size-12 rounded-full object-cover"
+                                        />
                                     ) : (
-                                        <span aria-hidden="true" className="grid size-12 place-items-center rounded-full bg-[#302017] text-[#d99152]">
+                                        <span
+                                            aria-hidden="true"
+                                            className="grid size-12 place-items-center rounded-full bg-[#302017] text-[#d99152]"
+                                        >
                                             ♙
                                         </span>
                                     )}
@@ -183,7 +237,9 @@ export default function ProfilePage() {
 
                                                 const reader = new FileReader()
                                                 reader.onload = () => {
-                                                    if (typeof reader.result === 'string') setAvatar(reader.result)
+                                                    if (typeof reader.result === 'string') {
+                                                        setAvatar(reader.result)
+                                                    }
                                                 }
                                                 reader.readAsDataURL(file)
                                             }}
@@ -211,11 +267,17 @@ export default function ProfilePage() {
                             </fieldset>
                         </div>
 
-                        <button type="submit" className={`${buttonClass} mt-8 min-w-[130px]`}>
-                            Salvar
+                        <button
+                            type="submit"
+                            disabled={saveMutation.isPending || profileQuery.isLoading}
+                            className={`${buttonClass} mt-8 min-w-[130px]`}
+                        >
+                            {saveMutation.isPending ? 'Salvando…' : 'Salvar'}
                         </button>
 
-                        {message && <p role="status" className="mt-4 text-[#d99152]">{message}</p>}
+                        {message && (
+                            <p role="status" className="mt-4 text-[#d99152]">{message}</p>
+                        )}
                     </form>
                 </section>
             </main>
